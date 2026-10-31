@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { FilledField, CopyItem, FormField } from "../../domain/form/form.types";
 import { FieldKey } from "../../domain/document/document.types";
 import { FormExporter } from "../../domain/document/document.ports";
@@ -32,39 +31,10 @@ export class CopyListBuilder implements FormExporter {
           instruction,
         };
       });
-=======
-import type { FilledField, CopyItem } from "../../domain/form/form.types";
-import type { FormExporter } from "../../domain/document/document.ports";
-
-export class CopyListBuilder implements FormExporter {
-  /**
-   * Builds ordered copy actions from reviewed fields. The UI masks Aadhaar in
-   * ordinary views; this adapter retains the confirmed value for an explicit
-   * user-triggered copy action (which should use Android's sensitive clipboard flag).
-   */
-  public buildCopyItems(fields: FilledField[]): CopyItem[] {
-    return fields.map((filled, index) => {
-      const instruction = filled.status === "SKIPPED"
-        ? "Manual signature or personal declaration required"
-        : filled.status === "NEEDS_USER"
-          ? "Value not present in confirmed documents; fill manually"
-          : undefined;
-
-      return {
-        fieldId: filled.field.id,
-        label: filled.field.label,
-        value: filled.status === "FILLED" ? (filled.value ?? "") : "",
-        status: filled.status,
-        order: index + 1,
-        instruction,
-      };
-    });
->>>>>>> dba0fcc (feat: add core document processing, form analysis, and offline-first mobile UI)
   }
 
   public formatPlainText(items: CopyItem[]): string {
     return items
-      .filter((item) => item.status === "FILLED")
       .map((item) => {
         if (item.status === "SKIPPED") {
           return `${item.order}. ${item.label}: [SKIPPED - ${item.instruction || "Manual entry required"}]`;

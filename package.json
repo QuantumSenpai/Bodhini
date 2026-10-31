@@ -5,13 +5,9 @@
   "dependencies": {
     "@expo/ui": "~58.0.26",
     "@react-native-ml-kit/text-recognition": "^2.0.0",
-<<<<<<< HEAD
-    "expo": "~58.0.21",
+    "expo": "~58.0.22",
     "expo-camera": "~58.0.14",
     "expo-clipboard": "~58.0.4",
-=======
-    "expo": "~58.0.22",
->>>>>>> dba0fcc (feat: add core document processing, form analysis, and offline-first mobile UI)
     "expo-constants": "~58.0.14",
     "expo-dev-client": "~58.0.18",
     "expo-device": "~58.0.5",
@@ -21,12 +17,8 @@
     "expo-image": "~58.0.18",
     "expo-image-picker": "~58.0.10",
     "expo-linking": "~58.0.15",
-<<<<<<< HEAD
-    "expo-router": "~58.0.28",
-    "expo-speech": "~58.0.3",
-=======
     "expo-router": "~58.0.29",
->>>>>>> dba0fcc (feat: add core document processing, form analysis, and offline-first mobile UI)
+    "expo-speech": "~58.0.3",
     "expo-splash-screen": "~58.0.12",
     "expo-sqlite": "~58.0.15",
     "expo-status-bar": "~58.0.4",
