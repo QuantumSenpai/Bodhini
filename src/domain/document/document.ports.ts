@@ -29,7 +29,7 @@ export interface FormAnalyzer {
 }
 
 export interface FieldMatcher {
-  match(fields: FormField[], docs: DocumentRecord[]): Promise<FilledField[]>;
+  match(fields: FormField[], docs: DocumentRecord[]): FilledField[];
 }
 
 export interface DocumentValidator {
@@ -43,7 +43,6 @@ export interface FormExporter {
 
 export interface VoiceService {
   speak(text: string, language: AppLanguage): Promise<void>;
-  playPrompt(id: string, language: AppLanguage): Promise<void>;
   stop(): void;
 }
 

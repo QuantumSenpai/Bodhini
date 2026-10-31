@@ -1,4 +1,3 @@
-import type * as SQLite from "expo-sqlite";
 import {
   DocumentRecord,
   DocumentType,
@@ -23,6 +22,7 @@ export class SQLiteDocumentRepository implements DocumentRepository {
   private readonly dbName: string;
   private isInitialized = false;
   private initPromise: Promise<void> | null = null;
+  private dbOpenPromise: Promise<ISQLiteDatabase> | null = null;
 
   constructor(databaseOrName: ISQLiteDatabase | string = "bodhini.db") {
     if (typeof databaseOrName === "string") {
@@ -40,13 +40,24 @@ export class SQLiteDocumentRepository implements DocumentRepository {
    */
   public async getDatabase(): Promise<ISQLiteDatabase> {
     if (!this.db) {
-      const SQLiteModule = await import("expo-sqlite");
-      this.db = await SQLiteModule.openDatabaseAsync(this.dbName);
+      if (!this.dbOpenPromise) {
+        this.dbOpenPromise = (async () => {
+          const SQLiteModule = await import("expo-sqlite");
+          return await SQLiteModule.openDatabaseAsync(this.dbName) as unknown as ISQLiteDatabase;
+        })();
+      }
+      try {
+        this.db = await this.dbOpenPromise;
+      } finally {
+        this.dbOpenPromise = null;
+      }
       this.isInitialized = false;
       this.initPromise = null;
     }
-    await this.ensureInitialized(this.db);
-    return this.db;
+    const activeDb = this.db;
+    if (!activeDb) throw new Error("SQLite database could not be opened.");
+    await this.ensureInitialized(activeDb);
+    return activeDb;
   }
 
   /**
@@ -88,9 +99,9 @@ export class SQLiteDocumentRepository implements DocumentRepository {
       CREATE TABLE IF NOT EXISTS documents (
         id TEXT PRIMARY KEY NOT NULL,
         type TEXT NOT NULL,
-        image_uri TEXT NOT NULL,
-        created_at TEXT NOT NULL,
-        confirmed_at TEXT NOT NULL
+        image_uri TEXT,
+        created_at INTEGER NOT NULL,
+        confirmed_at INTEGER NOT NULL
       );
     `);
 
@@ -163,9 +174,9 @@ export class SQLiteDocumentRepository implements DocumentRepository {
     const docRows = await db.getAllAsync<{
       id: string;
       type: string;
-      image_uri: string;
-      created_at: string;
-      confirmed_at: string;
+      image_uri: string | null;
+      created_at: number | string;
+      confirmed_at: number | string;
     }>("SELECT * FROM documents ORDER BY created_at DESC;");
 
     if (docRows.length === 0) {
@@ -201,8 +212,13 @@ export class SQLiteDocumentRepository implements DocumentRepository {
       type: d.type as DocumentType,
       imageUri: d.image_uri,
       fields: fieldsByDocId.get(d.id) || [],
+<<<<<<< HEAD
       createdAt: new Date(d.created_at).getTime(),
       confirmedAt: new Date(d.confirmed_at).getTime(),
+=======
+      createdAt: this.toTimestamp(d.created_at),
+      confirmedAt: this.toTimestamp(d.confirmed_at),
+>>>>>>> dba0fcc (feat: add core document processing, form analysis, and offline-first mobile UI)
     }));
   }
 
@@ -215,9 +231,9 @@ export class SQLiteDocumentRepository implements DocumentRepository {
     const docRow = await db.getFirstAsync<{
       id: string;
       type: string;
-      image_uri: string;
-      created_at: string;
-      confirmed_at: string;
+      image_uri: string | null;
+      created_at: number | string;
+      confirmed_at: number | string;
     }>("SELECT * FROM documents WHERE id = ?;", [id]);
 
     if (!docRow) {
@@ -246,8 +262,13 @@ export class SQLiteDocumentRepository implements DocumentRepository {
         confidence: Number(f.confidence),
         source: f.source as ExtractionSource,
       })),
+<<<<<<< HEAD
       createdAt: new Date(docRow.created_at).getTime(),
       confirmedAt: new Date(docRow.confirmed_at).getTime(),
+=======
+      createdAt: this.toTimestamp(docRow.created_at),
+      confirmedAt: this.toTimestamp(docRow.confirmed_at),
+>>>>>>> dba0fcc (feat: add core document processing, form analysis, and offline-first mobile UI)
     };
   }
 
@@ -262,6 +283,14 @@ export class SQLiteDocumentRepository implements DocumentRepository {
   /**
    * Closes the active database connection (useful for simulating app restarts in tests).
    */
+  private toTimestamp(value: string | number): number {
+    if (typeof value === "number") return value;
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) return numeric;
+    const parsed = Date.parse(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
   async close(): Promise<void> {
     if (this.db) {
       await this.db.closeAsync();

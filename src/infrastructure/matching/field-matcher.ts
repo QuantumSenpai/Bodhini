@@ -14,7 +14,10 @@ export interface MatchedFieldDetail {
   sourceDocumentId?: string;
 }
 
+type ConfirmedField = { field: ExtractedField; documentId: string };
+
 export class FieldMatcher implements IFieldMatcher {
+<<<<<<< HEAD
   public async match(fields: FormField[], docs: DocumentRecord[]): Promise<FilledField[]> {
     const detailed = this.matchDetailed(fields, docs);
     return detailed.map((d) => ({
@@ -27,6 +30,16 @@ export class FieldMatcher implements IFieldMatcher {
   }
 
   public matchDetailed(fields: FormField[], docs: DocumentRecord[]): MatchedFieldDetail[] {
+=======
+  /**
+   * Matches incoming form fields against confirmed document records.
+   * Enforces that signatures/declarations are skipped across field.type, field.label,
+   * and field.instruction (in English, Hindi, and Bengali), and missing values are never fabricated.
+   */
+  public match(fields: FormField[], docs: DocumentRecord[]): FilledField[] {
+    // Keep every confirmed value so conflicting records are surfaced for user resolution,
+    // rather than silently selecting one document over another.
+>>>>>>> dba0fcc (feat: add core document processing, form analysis, and offline-first mobile UI)
     const confirmedFieldsByKey = this.indexConfirmedFields(docs);
 
     return fields.map((field) => {
@@ -41,24 +54,56 @@ export class FieldMatcher implements IFieldMatcher {
         return {
           field,
           value: null,
+<<<<<<< HEAD
+=======
+          status: "SKIPPED",
+>>>>>>> dba0fcc (feat: add core document processing, form analysis, and offline-first mobile UI)
           confidence: 0,
           status: "SKIPPED",
           matchReason: evaluation.reason,
         };
       }
 
+<<<<<<< HEAD
       const resolution = resolveFieldKey(field.label);
+=======
+      // 2. Resolve field label to canonical FieldKey using trilingual synonyms
+      const resolution = field.key
+        ? { key: field.key, matchType: "exact" as const }
+        : resolveFieldKey(field.label);
+>>>>>>> dba0fcc (feat: add core document processing, form analysis, and offline-first mobile UI)
 
       if (resolution) {
-        const confirmedField = confirmedFieldsByKey.get(resolution.key);
+        const confirmedCandidates = confirmedFieldsByKey.get(resolution.key) ?? [];
+        const usableCandidates = confirmedCandidates.filter((candidate) => candidate.field.value.trim().length > 0);
+        const distinctValues = new Set(usableCandidates.map((candidate) => candidate.field.value.trim().toLocaleLowerCase()));
 
-        if (confirmedField && confirmedField.value && confirmedField.value.trim().length > 0) {
+        if (distinctValues.size > 1) {
+          return {
+            field,
+            value: null,
+            status: "NEEDS_USER",
+            confidence: 0,
+            matchedKey: resolution.key,
+            matchReason: "Conflicting confirmed values exist in more than one saved document. Choose the correct value manually.",
+          };
+        }
+
+        const confirmedField = usableCandidates[0];
+        if (confirmedField) {
           const evaluation = ConfidencePolicy.evaluate(field, true, resolution.matchType);
           return {
             field,
+<<<<<<< HEAD
             value: confirmedField.value,
             confidence: evaluation.confidence,
             status: evaluation.status,
+=======
+            value: confirmedField.field.value,
+            status: evaluation.status,
+            confidence: evaluation.confidence,
+            sourceDocumentId: confirmedField.documentId,
+>>>>>>> dba0fcc (feat: add core document processing, form analysis, and offline-first mobile UI)
             matchedKey: resolution.key,
             matchReason: evaluation.reason,
             sourceDocumentId: confirmedField.id,
@@ -70,6 +115,10 @@ export class FieldMatcher implements IFieldMatcher {
       return {
         field,
         value: null,
+<<<<<<< HEAD
+=======
+        status: evaluation.status,
+>>>>>>> dba0fcc (feat: add core document processing, form analysis, and offline-first mobile UI)
         confidence: evaluation.confidence,
         status: evaluation.status,
         matchReason: evaluation.reason,
@@ -77,8 +126,14 @@ export class FieldMatcher implements IFieldMatcher {
     });
   }
 
+<<<<<<< HEAD
   private indexConfirmedFields(docs: DocumentRecord[]): Map<FieldKey, ExtractedField> {
     const map = new Map<FieldKey, ExtractedField>();
+=======
+  /** Indexes every confirmed value with its owning document so matches retain provenance. */
+  private indexConfirmedFields(docs: DocumentRecord[]): Map<FieldKey, ConfirmedField[]> {
+    const map = new Map<FieldKey, ConfirmedField[]>();
+>>>>>>> dba0fcc (feat: add core document processing, form analysis, and offline-first mobile UI)
 
     const sortedDocs = [...docs].sort((a, b) => {
       const timeA = a.confirmedAt || a.createdAt;
@@ -88,8 +143,10 @@ export class FieldMatcher implements IFieldMatcher {
 
     for (const doc of sortedDocs) {
       for (const field of doc.fields) {
-        if (!map.has(field.key) && field.value && field.value.trim().length > 0) {
-          map.set(field.key, field);
+        if (field.value && field.value.trim().length > 0) {
+          const current = map.get(field.key) ?? [];
+          current.push({ field, documentId: doc.id });
+          map.set(field.key, current);
         }
       }
     }
