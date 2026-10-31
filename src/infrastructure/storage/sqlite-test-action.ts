@@ -47,8 +47,8 @@ export async function runSQLiteSmokeTest(
       id: sampleDocId,
       type: "AADHAAR",
       imageUri: "file:///sandbox/synthetic-test-aadhaar.jpg",
-      createdAt: new Date(testRunId).toISOString(),
-      confirmedAt: new Date(testRunId).toISOString(),
+      createdAt: testRunId,
+      confirmedAt: testRunId,
       fields: [
         {
           id: `f-name-${testRunId}`,

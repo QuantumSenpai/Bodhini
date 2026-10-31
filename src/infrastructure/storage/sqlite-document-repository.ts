@@ -6,7 +6,7 @@ import {
   ExtractionSource,
   FieldKey,
 } from "../../domain/document/document.types";
-import { DocumentRepository } from "../../domain/document/document-repository.port";
+import { DocumentRepository } from "../../domain/document/document.ports";
 
 export interface ISQLiteDatabase {
   readonly databasePath?: string;
@@ -126,7 +126,7 @@ export class SQLiteDocumentRepository implements DocumentRepository {
       await db.runAsync(
         `INSERT OR REPLACE INTO documents (id, type, image_uri, created_at, confirmed_at)
          VALUES (?, ?, ?, ?, ?);`,
-        [doc.id, doc.type, doc.imageUri, doc.createdAt, doc.confirmedAt]
+        [doc.id, doc.type, doc.imageUri, new Date(doc.createdAt).toISOString(), new Date(doc.confirmedAt).toISOString()]
       );
 
       // Remove any existing fields for this document prior to inserting updated ones
@@ -201,8 +201,8 @@ export class SQLiteDocumentRepository implements DocumentRepository {
       type: d.type as DocumentType,
       imageUri: d.image_uri,
       fields: fieldsByDocId.get(d.id) || [],
-      createdAt: d.created_at,
-      confirmedAt: d.confirmed_at,
+      createdAt: new Date(d.created_at).getTime(),
+      confirmedAt: new Date(d.confirmed_at).getTime(),
     }));
   }
 
@@ -246,8 +246,8 @@ export class SQLiteDocumentRepository implements DocumentRepository {
         confidence: Number(f.confidence),
         source: f.source as ExtractionSource,
       })),
-      createdAt: docRow.created_at,
-      confirmedAt: docRow.confirmed_at,
+      createdAt: new Date(docRow.created_at).getTime(),
+      confirmedAt: new Date(docRow.confirmed_at).getTime(),
     };
   }
 

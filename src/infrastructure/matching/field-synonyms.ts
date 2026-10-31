@@ -24,6 +24,40 @@ export const FIELD_SYNONYMS: Record<FieldKey, string[]> = {
     "প্রার্থীর নাম",
   ],
 
+  FATHER_NAME: [
+    // English
+    "father name",
+    "fathers name",
+    "father's name",
+    "father s name",
+    "name of father",
+    // Hindi
+    "पिता का नाम",
+    "पिताजी का नाम",
+    "पिता नाम",
+    // Bengali
+    "বাবার নাম",
+    "পিতার নাম",
+    "বাবার নাম কী",
+  ],
+
+  MOTHER_NAME: [
+    // English
+    "mother name",
+    "mothers name",
+    "mother's name",
+    "mother s name",
+    "name of mother",
+    // Hindi
+    "माता का नाम",
+    "माताजी का नाम",
+    "माता नाम",
+    // Bengali
+    "মায়ের নাম",
+    "মাতার নাম",
+    "মায়ের নাম কী",
+  ],
+
   DOB: [
     // English
     "dob",

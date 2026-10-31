@@ -1,46 +1,38 @@
-import { FilledField, CopyItem } from "../../domain/form/form.types";
-import { FormExporter } from "../../domain/form/form-exporter.port";
-import { FieldValidator } from "../validation/field-validator";
+import { FilledField, CopyItem, FormField } from "../../domain/form/form.types";
+import { FieldKey } from "../../domain/document/document.types";
+import { FormExporter } from "../../domain/document/document.ports";
+import { isValidAadhaar, maskAadhaar } from "../validation/verhoeff";
 
 export class CopyListBuilder implements FormExporter {
-  /**
-   * Builds ordered CopyItems from FilledFields.
-   * Ensures Aadhaar values are masked when displayed.
-   */
   public buildCopyItems(fields: FilledField[]): CopyItem[] {
-    return fields.map((field, index) => {
-      let displayValue = field.value;
+    return fields
+      .filter((filled) => filled.status === "FILLED")
+      .map((filled, index) => {
+        const field = filled.field as FormField;
+        let displayValue = filled.value ?? "";
 
-      // Mask Aadhaar values for display/copy review
-      if (
-        (field.matchedKey === "AADHAAR_NO" || FieldValidator.isValidAadhaar(field.value)) &&
-        field.value &&
-        field.value.trim().length > 0
-      ) {
-        displayValue = FieldValidator.maskAadhaar(field.value);
-      }
+        if ((field.key === "AADHAAR_NO" || isValidAadhaar(displayValue)) && displayValue.trim().length > 0) {
+          displayValue = maskAadhaar(displayValue);
+        }
 
-      let instruction: string | undefined;
-      if (field.status === "SKIPPED") {
-        instruction = "Manual signature or personal declaration required";
-      } else if (field.status === "NEEDS_USER") {
-        instruction = "Value not present in confirmed documents; fill manually";
-      }
+        let instruction: string | undefined;
+        if (filled.status === "SKIPPED") {
+          instruction = "Manual signature or personal declaration required";
+        } else if (filled.status === "NEEDS_USER") {
+          instruction = "Value not present in confirmed documents; fill manually";
+        }
 
-      return {
-        fieldId: field.fieldId,
-        label: field.label,
-        value: displayValue,
-        status: field.status,
-        order: index + 1,
-        instruction,
-      };
-    });
+        return {
+          fieldId: field.id,
+          label: field.label,
+          value: displayValue,
+          status: filled.status,
+          order: index + 1,
+          instruction,
+        };
+      });
   }
 
-  /**
-   * Formats CopyItems into clear, structured plain text suitable for clipboard pasting.
-   */
   public formatPlainText(items: CopyItem[]): string {
     return items
       .map((item) => {

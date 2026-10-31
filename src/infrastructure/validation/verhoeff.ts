@@ -41,3 +41,12 @@ export function isValidAadhaar(value: string): boolean {
   if (!/^[2-9]/.test(digits)) return false;
   return isValidVerhoeff(digits);
 }
+
+export function maskAadhaar(value: string): string {
+  const cleaned = value.replace(/\s+/g, "").replace(/-/g, "");
+  if (cleaned.length < 4) {
+    return value;
+  }
+  const last4 = cleaned.slice(-4);
+  return `•••• •••• ${last4}`;
+}
