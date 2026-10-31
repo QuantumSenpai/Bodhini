@@ -10,6 +10,7 @@ import { FieldValidator } from "../../validation/field-validator";
 import { classifyDocument } from "./DocumentClassifier";
 import { recognizeText } from "./OcrTextRecognizer";
 import { resolveFieldKey } from "../../matching/field-synonyms";
+import { extractAadhaarFields } from "./aadhaarExtract";
 
 const LABELS: Record<FieldKey, string> = {
   FULL_NAME: "Full Name",
@@ -66,7 +67,11 @@ function findFollowingValue(lines: string[], index: number, documentType: Docume
   return null;
 }
 
-function parseFields(text: string, documentType: DocumentAnalysis["type"]): ExtractedField[] {
+function parseFields(text: string, documentType: DocumentAnalysis["type"], blocks: { text: string; box: { x: number; y: number; width: number; height: number } }[]): ExtractedField[] {
+  if (documentType === "AADHAAR") {
+    return extractAadhaarFields(text, blocks);
+  }
+
   const lines = text
     .split(/\r?\n/)
     .map((line) => line.replace(/[|•]/g, " ").trim())
@@ -128,7 +133,7 @@ export class OcrDocumentProcessor implements DocumentProcessor {
     if (!uri) throw new AppError("UNSUPPORTED_INPUT");
     const result = await recognizeText(uri);
     const documentType = classifyDocument(result.text);
-    const fields = parseFields(result.text, documentType);
+    const fields = parseFields(result.text, documentType, result.blocks);
     if (fields.length === 0) {
       throw new AppError("EXTRACTION_FAILED", "We could read the image, but could not identify supported fields. Try a clearer, well-lit image.");
     }
