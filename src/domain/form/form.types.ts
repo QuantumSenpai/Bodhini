@@ -36,11 +36,16 @@ export interface FormField {
 }
 
 export interface FilledField {
+  /** Original form field, retained for preview and field-level actions. */
   field: FormField;
   value: string | null;
   confidence: number;
   status: FillStatus;
   sourceDocumentId?: string;
+  /** Canonical key of the confirmed document field used for this match. */
+  matchedKey?: FieldKey;
+  /** Human-readable explanation suitable for an accessible review UI. */
+  matchReason?: string;
 }
 
 export interface CopyItem {
