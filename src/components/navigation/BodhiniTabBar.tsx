@@ -1,4 +1,5 @@
 import React from "react";
+import { Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Home, FolderOpen, FileText, UserRound, Mic } from "lucide-react-native";
@@ -6,7 +7,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { AppLanguage } from "../../domain/document/document.types";
 import { useBodhini } from "../../state/AppContext";
 import { t } from "../../i18n/translations";
-import { services } from "../../composition/services";
 import { colors } from "../../theme/tokens";
 
 const iconFor = (name: string, color: string, size: number) => {
@@ -45,15 +45,17 @@ export function BodhiniTabBar({ state }: any) {
     </Pressable>;
   };
 
+  const handleVoicePress = () => {
+    Alert.alert(t(language, "voiceUnderDevelopmentTitle"), t(language, "voiceUnderDevelopmentMessage"));
+  };
+
   return <View style={[styles.bar, { paddingBottom: insets.bottom }]}>
     <View style={styles.group}>{left.map(renderTab)}</View>
     <Pressable
       style={styles.voice}
-      onPress={() => {
-        if (interactionMode === "speak") services.voiceService.speak(t(language, "speakPrompt"), language).catch(() => undefined);
-      }}
+      onPress={handleVoicePress}
       accessibilityRole="button"
-      accessibilityLabel={t(language, "speakPrompt")}
+      accessibilityLabel={t(language, "voiceUnderDevelopmentTitle")}
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
     >
       <Mic color={colors.white} size={22} />

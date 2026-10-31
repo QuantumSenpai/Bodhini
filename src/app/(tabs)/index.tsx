@@ -33,10 +33,10 @@ export default function HomeScreen() {
     <ActionCard title={t(language, "fill")} subtitle={t(language, "fillSub")} icon={<FileText size={25} color={colors.white} />} tint={colors.terracotta} onPress={() => router.push("/(tabs)/forms")} />
     <ActionCard title={t(language, "locker")} subtitle={t(language, "lockerSub")} icon={<FolderOpen size={25} color={colors.white} />} tint={colors.blue} onPress={() => router.push("/(tabs)/documents")} />
 
-    <View style={styles.landscapeCard}>
-      <Image source={require("../../../assets/images/welcome-landscape.png")} style={styles.landscape} contentFit="cover" transition={200} />
-      <View style={styles.landscapeOverlay}>
-        <Text style={styles.landscapeTitle}>{t(language, "landscapeMessage")}</Text>
+    <View style={styles.heroCard}>
+      <Image source={require("../../../assets/images/welcome-landscape.png")} style={styles.heroImage} contentFit="cover" transition={200} />
+      <View style={styles.heroOverlay}>
+        <Text style={styles.heroTitle}>{t(language, "landscapeMessage")}</Text>
       </View>
     </View>
 
@@ -55,9 +55,9 @@ const styles = StyleSheet.create({
   settingsButton: { width: 42, height: 42, backgroundColor: colors.card, borderRadius: 15, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.line },
   greetingRow: { flexDirection: "row", alignItems: "center", marginBottom: 19, gap: 12 },
   greeting: { color: colors.ink, fontFamily: "serif", fontSize: 25, lineHeight: 31, fontWeight: "600" },
-  landscapeCard: { height: 146, borderRadius: 20, overflow: "hidden", marginTop: 9, backgroundColor: colors.cardStrong },
-  landscape: { width: "100%", height: "100%", aspectRatio: 16 / 9 }, landscapeOverlay: { flex: 1, justifyContent: "flex-end", padding: 17, backgroundColor: "rgba(18,38,31,0.12)" },
-  landscapeTitle: { color: colors.white, fontFamily: "serif", fontSize: 17, fontWeight: "700", textShadowColor: "rgba(0,0,0,.35)", textShadowRadius: 4 },
+  heroCard: { borderRadius: 20, overflow: "hidden", marginTop: 9, backgroundColor: colors.cardStrong, aspectRatio: 16 / 9 },
+  heroImage: { width: "100%", height: "100%" }, heroOverlay: { position: "absolute", bottom: 0, left: 0, right: 0, padding: 17, backgroundColor: "rgba(18,38,31,0.7)" },
+  heroTitle: { color: colors.white, fontFamily: "serif", fontSize: 17, fontWeight: "700", textShadowColor: "rgba(0,0,0,.35)", textShadowRadius: 4 },
   privacyNote: { marginTop: 15, flexDirection: "row", alignItems: "center", gap: 9, paddingHorizontal: 12, paddingVertical: 11, backgroundColor: colors.forestLight, borderRadius: 13 },
   privacyText: { color: colors.forest, fontSize: 11, flex: 1, lineHeight: 16 }, listenPrompt: { marginTop: 12, flexDirection: "row", gap: 7, alignItems: "center", alignSelf: "center" }, listenText: { color: colors.forest, fontSize: 12, fontWeight: "600" },
   savedCount: { textAlign: "center", color: colors.muted, fontSize: 11, marginTop: 14 },
