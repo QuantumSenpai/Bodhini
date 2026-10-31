@@ -32,6 +32,7 @@ export interface FormField {
   required: boolean;
   box?: Box;
   page?: number;
+  instruction?: string;
 }
 
 export interface FilledField {
@@ -47,4 +48,6 @@ export interface CopyItem {
   label: string;
   value: string;
   status: FillStatus;
+  order?: number;
+  instruction?: string;
 }
