@@ -86,13 +86,8 @@ describe("Backend B — Data Engine Synthetic Tests", () => {
         id: "doc-aadhaar-001",
         type: "AADHAAR",
         imageUri: "file:///sandbox/docs/aadhaar-front.jpg",
-<<<<<<< HEAD
         createdAt: 1793418000000,
         confirmedAt: 1793418300000,
-=======
-        createdAt: 1793437200000,
-        confirmedAt: 1793437500000,
->>>>>>> dba0fcc (feat: add core document processing, form analysis, and offline-first mobile UI)
         fields: [
           {
             id: "field-name-1",
@@ -122,13 +117,8 @@ describe("Backend B — Data Engine Synthetic Tests", () => {
       assert.equal(retrieved.id, "doc-aadhaar-001");
       assert.equal(retrieved.type, "AADHAAR");
       assert.equal(retrieved.imageUri, "file:///sandbox/docs/aadhaar-front.jpg");
-<<<<<<< HEAD
       assert.equal(retrieved.createdAt, 1793418000000);
       assert.equal(retrieved.confirmedAt, 1793418300000);
-=======
-      assert.equal(retrieved.createdAt, 1793437200000);
-      assert.equal(retrieved.confirmedAt, 1793437500000);
->>>>>>> dba0fcc (feat: add core document processing, form analysis, and offline-first mobile UI)
       assert.equal(retrieved.fields.length, 2);
 
       const nameField = retrieved.fields.find((f) => f.key === "FULL_NAME");
@@ -150,13 +140,8 @@ describe("Backend B — Data Engine Synthetic Tests", () => {
         id: "doc-pan-002",
         type: "PAN",
         imageUri: "file:///sandbox/docs/pan-card.jpg",
-<<<<<<< HEAD
         createdAt: 1793421600000,
         confirmedAt: 1793421720000,
-=======
-        createdAt: 1793440800000,
-        confirmedAt: 1793440920000,
->>>>>>> dba0fcc (feat: add core document processing, form analysis, and offline-first mobile UI)
         fields: [
           {
             id: "pan-f1",
@@ -200,13 +185,8 @@ describe("Backend B — Data Engine Synthetic Tests", () => {
         id: "doc-del-003",
         type: "OTHER",
         imageUri: "file:///sandbox/docs/voter.jpg",
-<<<<<<< HEAD
         createdAt: 1793425200000,
         confirmedAt: 1793425260000,
-=======
-        createdAt: 1793444400000,
-        confirmedAt: 1793444460000,
->>>>>>> dba0fcc (feat: add core document processing, form analysis, and offline-first mobile UI)
         fields: [
           {
             id: "f-voter-1",
@@ -252,13 +232,8 @@ describe("Backend B — Data Engine Synthetic Tests", () => {
           id: "doc-persist-004",
           type: "AADHAAR",
           imageUri: "file:///sandbox/docs/aadhaar.jpg",
-<<<<<<< HEAD
           createdAt: 1793428800000,
           confirmedAt: 1793429100000,
-=======
-          createdAt: 1793448000000,
-          confirmedAt: 1793448300000,
->>>>>>> dba0fcc (feat: add core document processing, form analysis, and offline-first mobile UI)
           fields: [
             {
               id: "f-aadhaar-num",
@@ -316,13 +291,8 @@ describe("Backend B — Data Engine Synthetic Tests", () => {
         id: "doc-init-once",
         type: "AADHAAR",
         imageUri: "file:///sandbox/aadhaar.jpg",
-<<<<<<< HEAD
         createdAt: 1793428800000,
         confirmedAt: 1793429100000,
-=======
-        createdAt: 1793448000000,
-        confirmedAt: 1793448300000,
->>>>>>> dba0fcc (feat: add core document processing, form analysis, and offline-first mobile UI)
         fields: [],
       };
 
@@ -500,13 +470,8 @@ describe("Backend B — Data Engine Synthetic Tests", () => {
         id: "doc-user-001",
         type: "AADHAAR",
         imageUri: "file:///sandbox/aadhaar.jpg",
-<<<<<<< HEAD
         createdAt: 1793418000000,
         confirmedAt: 1793418000000,
-=======
-        createdAt: 1793437200000,
-        confirmedAt: 1793437200000,
->>>>>>> dba0fcc (feat: add core document processing, form analysis, and offline-first mobile UI)
         fields: [
           {
             id: "f1",
@@ -612,7 +577,7 @@ describe("Backend B — Data Engine Synthetic Tests", () => {
 
       const formFields: FormField[] = [
         { id: "f-sig-1", label: "Signature of Applicant", type: "SIGNATURE", required: true },
-        { id: "f-sig-2", label: "আবেদনকারীর স্বাক্ষর", type: "TEXT", required: true },
+        { id: "f-sig-2", label: "आबेदनकारीर स्वाक्षर", type: "TEXT", required: true },
         { id: "f-decl-1", label: "I hereby declare the above is true", type: "DECLARATION", required: true },
         { id: "f-decl-2", label: "घोषणा", type: "TEXT", required: true },
       ];
@@ -710,7 +675,6 @@ describe("Backend B — Data Engine Synthetic Tests", () => {
           type: "TEXT",
           required: true,
           instruction: "Physical signature required on paper form before submission",
-          required: true,
         },
       ];
       const matches = matcher.matchDetailed(fields, confirmedDocs);
@@ -728,7 +692,6 @@ describe("Backend B — Data Engine Synthetic Tests", () => {
           type: "TEXT",
           required: true,
           instruction: "I hereby declare that all information given above is true and correct",
-          required: true,
         },
       ];
       const matches = matcher.matchDetailed(fields, confirmedDocs);
@@ -746,7 +709,6 @@ describe("Backend B — Data Engine Synthetic Tests", () => {
           type: "TEXT",
           required: true,
           instruction: "कृपया यहाँ हस्ताक्षर करें और फॉर्म जमा करें",
-          required: true,
         },
         {
           id: "r10-bn",
@@ -754,7 +716,6 @@ describe("Backend B — Data Engine Synthetic Tests", () => {
           type: "TEXT",
           required: true,
           instruction: "আবেদনকারীর স্বাক্ষর ও ঘোষণা বাধ্যতামূলক",
-          required: true,
         },
       ];
       const matches = matcher.matchDetailed(fields, confirmedDocs);
@@ -775,7 +736,6 @@ describe("Backend B — Data Engine Synthetic Tests", () => {
   describe("CopyListBuilder", () => {
     it("should build ordered copy items and exclude skipped or missing values from clipboard output", () => {
       const builder = new CopyListBuilder();
-<<<<<<< HEAD
 
       const nameField: FormField = { id: "f1", label: "Full Name", type: "TEXT", required: true, key: "FULL_NAME" };
       const aadhaarField: FormField = { id: "f2", label: "Aadhaar Number", type: "TEXT", required: true, key: "AADHAAR_NO" };
@@ -787,28 +747,8 @@ describe("Backend B — Data Engine Synthetic Tests", () => {
         { field: aadhaarField, value: "200000000013", status: "FILLED", confidence: 0.95 },
         { field: sigField, value: "", status: "SKIPPED", confidence: 0 },
         { field: incomeField, value: "", status: "NEEDS_USER", confidence: 0 },
-=======
-      const filledFields = [
-        {
-          field: { id: "f1", label: "Full Name", type: "TEXT" as const, required: true },
-          value: "Anita Roy", status: "FILLED" as const, confidence: 0.95, matchedKey: "FULL_NAME" as const,
-        },
-        {
-          field: { id: "f2", label: "Aadhaar Number", type: "TEXT" as const, required: true },
-          value: "200000000013", status: "FILLED" as const, confidence: 0.95, matchedKey: "AADHAAR_NO" as const,
-        },
-        {
-          field: { id: "f3", label: "Signature", type: "SIGNATURE" as const, required: true },
-          value: null, status: "SKIPPED" as const, confidence: 0,
-        },
-        {
-          field: { id: "f4", label: "Annual Income", type: "TEXT" as const, required: true },
-          value: null, status: "NEEDS_USER" as const, confidence: 0,
-        },
->>>>>>> dba0fcc (feat: add core document processing, form analysis, and offline-first mobile UI)
       ];
       const items = builder.buildCopyItems(filledFields);
-<<<<<<< HEAD
       assert.equal(items.length, 2);
 
       // Verify ordering (only FILLED items are copied)
@@ -830,18 +770,6 @@ describe("Backend B — Data Engine Synthetic Tests", () => {
       assert.ok(plainText.includes("2. Aadhaar Number: •••• •••• 0013 [FILLED]"));
       assert.ok(plainText.includes("3. Signature: [SKIPPED"));
       assert.ok(plainText.includes("4. Annual Income: [NEEDS USER INPUT"));
-=======
-      assert.equal(items.length, 4);
-      assert.deepEqual(items.map((item) => item.order), [1, 2, 3, 4]);
-      // Copy payload keeps the true value; UI masking is applied in the ordinary display layer.
-      assert.equal(items[1].value, "200000000013");
-      assert.equal(items[2].value, "");
-      assert.equal(items[3].value, "");
-      const plainText = builder.formatPlainText(items);
-      assert.match(plainText, /1\. Full Name: Anita Roy/);
-      assert.match(plainText, /2\. Aadhaar Number: 200000000013/);
-      assert.doesNotMatch(plainText, /Signature|Annual Income/);
->>>>>>> dba0fcc (feat: add core document processing, form analysis, and offline-first mobile UI)
     });
   });
 });

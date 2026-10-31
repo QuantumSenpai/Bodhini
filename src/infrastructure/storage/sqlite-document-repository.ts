@@ -212,13 +212,8 @@ export class SQLiteDocumentRepository implements DocumentRepository {
       type: d.type as DocumentType,
       imageUri: d.image_uri,
       fields: fieldsByDocId.get(d.id) || [],
-<<<<<<< HEAD
       createdAt: new Date(d.created_at).getTime(),
       confirmedAt: new Date(d.confirmed_at).getTime(),
-=======
-      createdAt: this.toTimestamp(d.created_at),
-      confirmedAt: this.toTimestamp(d.confirmed_at),
->>>>>>> dba0fcc (feat: add core document processing, form analysis, and offline-first mobile UI)
     }));
   }
 
@@ -262,13 +257,8 @@ export class SQLiteDocumentRepository implements DocumentRepository {
         confidence: Number(f.confidence),
         source: f.source as ExtractionSource,
       })),
-<<<<<<< HEAD
       createdAt: new Date(docRow.created_at).getTime(),
       confirmedAt: new Date(docRow.confirmed_at).getTime(),
-=======
-      createdAt: this.toTimestamp(docRow.created_at),
-      confirmedAt: this.toTimestamp(docRow.confirmed_at),
->>>>>>> dba0fcc (feat: add core document processing, form analysis, and offline-first mobile UI)
     };
   }
 

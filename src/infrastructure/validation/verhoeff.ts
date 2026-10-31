@@ -40,7 +40,6 @@ export function isValidAadhaar(value: string): boolean {
   if (digits.length !== 12) return false;
   if (!/^[2-9]/.test(digits)) return false;
   return isValidVerhoeff(digits);
-<<<<<<< HEAD
 }
 
 export function maskAadhaar(value: string): string {
@@ -50,6 +49,4 @@ export function maskAadhaar(value: string): string {
   }
   const last4 = cleaned.slice(-4);
   return `•••• •••• ${last4}`;
-=======
->>>>>>> dba0fcc (feat: add core document processing, form analysis, and offline-first mobile UI)
 }

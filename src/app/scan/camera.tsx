@@ -60,7 +60,7 @@ export default function ScanCameraScreen() {
   </SafeAreaView>;
 
   return <View style={styles.container}>
-    <StatusBar style="light" backgroundColor="#171512" />
+    <StatusBar style="light" />
     <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing={facing} enableTorch={flash} onCameraReady={() => setReady(true)} />
     <SafeAreaView style={styles.overlay}>
       <View style={styles.topBar}>

@@ -17,29 +17,19 @@ export interface MatchedFieldDetail {
 type ConfirmedField = { field: ExtractedField; documentId: string };
 
 export class FieldMatcher implements IFieldMatcher {
-<<<<<<< HEAD
-  public async match(fields: FormField[], docs: DocumentRecord[]): Promise<FilledField[]> {
+  public match(fields: FormField[], docs: DocumentRecord[]): FilledField[] {
     const detailed = this.matchDetailed(fields, docs);
     return detailed.map((d) => ({
       field: d.field,
-      value: d.value ?? "",
+      value: d.value,
       confidence: d.confidence,
       status: d.status,
       sourceDocumentId: d.sourceDocumentId,
+      matchReason: d.matchReason,
     }));
   }
 
   public matchDetailed(fields: FormField[], docs: DocumentRecord[]): MatchedFieldDetail[] {
-=======
-  /**
-   * Matches incoming form fields against confirmed document records.
-   * Enforces that signatures/declarations are skipped across field.type, field.label,
-   * and field.instruction (in English, Hindi, and Bengali), and missing values are never fabricated.
-   */
-  public match(fields: FormField[], docs: DocumentRecord[]): FilledField[] {
-    // Keep every confirmed value so conflicting records are surfaced for user resolution,
-    // rather than silently selecting one document over another.
->>>>>>> dba0fcc (feat: add core document processing, form analysis, and offline-first mobile UI)
     const confirmedFieldsByKey = this.indexConfirmedFields(docs);
 
     return fields.map((field) => {
@@ -54,24 +44,13 @@ export class FieldMatcher implements IFieldMatcher {
         return {
           field,
           value: null,
-<<<<<<< HEAD
-=======
-          status: "SKIPPED",
->>>>>>> dba0fcc (feat: add core document processing, form analysis, and offline-first mobile UI)
           confidence: 0,
           status: "SKIPPED",
           matchReason: evaluation.reason,
         };
       }
 
-<<<<<<< HEAD
       const resolution = resolveFieldKey(field.label);
-=======
-      // 2. Resolve field label to canonical FieldKey using trilingual synonyms
-      const resolution = field.key
-        ? { key: field.key, matchType: "exact" as const }
-        : resolveFieldKey(field.label);
->>>>>>> dba0fcc (feat: add core document processing, form analysis, and offline-first mobile UI)
 
       if (resolution) {
         const confirmedCandidates = confirmedFieldsByKey.get(resolution.key) ?? [];
@@ -94,19 +73,12 @@ export class FieldMatcher implements IFieldMatcher {
           const evaluation = ConfidencePolicy.evaluate(field, true, resolution.matchType);
           return {
             field,
-<<<<<<< HEAD
-            value: confirmedField.value,
-            confidence: evaluation.confidence,
-            status: evaluation.status,
-=======
             value: confirmedField.field.value,
-            status: evaluation.status,
             confidence: evaluation.confidence,
-            sourceDocumentId: confirmedField.documentId,
->>>>>>> dba0fcc (feat: add core document processing, form analysis, and offline-first mobile UI)
+            status: evaluation.status,
             matchedKey: resolution.key,
             matchReason: evaluation.reason,
-            sourceDocumentId: confirmedField.id,
+            sourceDocumentId: confirmedField.documentId,
           };
         }
       }
@@ -115,10 +87,6 @@ export class FieldMatcher implements IFieldMatcher {
       return {
         field,
         value: null,
-<<<<<<< HEAD
-=======
-        status: evaluation.status,
->>>>>>> dba0fcc (feat: add core document processing, form analysis, and offline-first mobile UI)
         confidence: evaluation.confidence,
         status: evaluation.status,
         matchReason: evaluation.reason,
@@ -126,14 +94,8 @@ export class FieldMatcher implements IFieldMatcher {
     });
   }
 
-<<<<<<< HEAD
-  private indexConfirmedFields(docs: DocumentRecord[]): Map<FieldKey, ExtractedField> {
-    const map = new Map<FieldKey, ExtractedField>();
-=======
-  /** Indexes every confirmed value with its owning document so matches retain provenance. */
   private indexConfirmedFields(docs: DocumentRecord[]): Map<FieldKey, ConfirmedField[]> {
     const map = new Map<FieldKey, ConfirmedField[]>();
->>>>>>> dba0fcc (feat: add core document processing, form analysis, and offline-first mobile UI)
 
     const sortedDocs = [...docs].sort((a, b) => {
       const timeA = a.confirmedAt || a.createdAt;
