@@ -35,46 +35,95 @@ function addField(
   });
 }
 
-function isDevanagari(text: string): boolean {
-  return /[\u0900-\u097F]/.test(text);
+const REJECT_WORDS = new Set([
+  "government", "india", "aadhaar", "aadhar", "unique", "identification",
+  "authority", "uidai", "male", "female", "dob", "birth", "year",
+  "address", "enrolment", "vid", "help", "www", "gov", "mera", "meri",
+]);
+
+function cleanLatin(text: string): string {
+  let t = text.replace(/[^A-Za-z\s.]/g, " ");
+  t = t.replace(/\b(DOB|Date of Birth|YOB|Year of Birth|MALE|FEMALE|TRANSGENDER|Gender)\b/gi, " ");
+  return t.replace(/\s+/g, " ").trim();
 }
 
-function isBengali(text: string): boolean {
-  return /[\u0980-\u09FF]/.test(text);
+function hasVowel(word: string): boolean {
+  return /[aeiou]/i.test(word);
 }
 
-function isLatinOnly(text: string): boolean {
-  return /^[A-Za-z\s.]{2,}$/.test(text.trim());
+function isGarbage(line: string): boolean {
+  const words = line.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return true;
+  for (const w of words) {
+    if (w.length < 2 || !hasVowel(w)) return true;
+  }
+  return false;
 }
 
-function wordCount(text: string): number {
-  return text.trim().split(/\s+/).filter(Boolean).length;
+function scoreNameCandidate(line: string): number {
+  const cleaned = cleanLatin(line);
+  if (isGarbage(cleaned)) return -1;
+  const words = cleaned.split(/\s+/).filter(Boolean);
+  const wc = words.length;
+  if (wc < 2 || wc > 4) return -1;
+  for (const w of words) {
+    if (w.length < 2) return -1;
+    if (REJECT_WORDS.has(w.toLowerCase())) return -1;
+  }
+  const letterRatio = words.join("").length / cleaned.replace(/\s/g, "").length;
+  if (letterRatio < 0.8) return -1;
+  return wc * 10 + Math.floor(letterRatio * 10);
 }
 
-function looksLikeName(text: string): boolean {
-  if (!isLatinOnly(text)) return false;
-  const wc = wordCount(text);
-  return wc >= 2 && wc <= 4;
-}
-
-function findPvcFrontName(lines: string[]): string | null {
-  for (let i = 0; i < lines.length - 1; i++) {
-    if (isDevanagari(lines[i]) && looksLikeName(lines[i + 1])) {
-      return lines[i + 1];
+function findDobLineIndex(lines: string[]): number {
+  for (let i = 0; i < lines.length; i++) {
+    if (/\b(?:DOB|Date of Birth|Year of Birth|YOB)\b/i.test(lines[i]) ||
+        /\b\d{2}[\/\-.]\d{2}[\/\-.]\d{4}\b/.test(lines[i])) {
+      return i;
     }
   }
-  return null;
+  return -1;
 }
 
-function findEAadhaarName(lines: string[]): string | null {
+function findBestNameAboveDob(lines: string[]): string | null {
+  const dobIdx = findDobLineIndex(lines);
+  if (dobIdx === -1) return null;
+  const start = Math.max(0, dobIdx - 4);
+  let best: { line: string; score: number } | null = null;
+  for (let i = start; i < dobIdx; i++) {
+    const score = scoreNameCandidate(lines[i]);
+    if (score > 0 && (!best || score > best.score)) {
+      best = { line: cleanLatin(lines[i]), score };
+    }
+  }
+  return best?.line ?? null;
+}
+
+function findNameAfterTo(lines: string[]): string | null {
   for (let i = 0; i < lines.length; i++) {
     if (/^To,?\s*$/i.test(lines[i].trim())) {
-      for (let j = i + 1; j < Math.min(lines.length, i + 5); j++) {
-        if (looksLikeName(lines[j])) return lines[j];
+      for (let j = i + 1; j < Math.min(lines.length, i + 6); j++) {
+        const score = scoreNameCandidate(lines[j]);
+        if (score > 0) return cleanLatin(lines[j]);
       }
     }
   }
   return null;
+}
+
+function findBestNameAnywhere(lines: string[]): string | null {
+  let best: { line: string; score: number } | null = null;
+  for (const line of lines) {
+    const score = scoreNameCandidate(line);
+    if (score > 0 && (!best || score > best.score)) {
+      best = { line: cleanLatin(line), score };
+    }
+  }
+  return best?.line ?? null;
+}
+
+function findName(lines: string[]): string | null {
+  return findBestNameAboveDob(lines) ?? findNameAfterTo(lines) ?? findBestNameAnywhere(lines);
 }
 
 function findGender(text: string): string | null {
@@ -162,16 +211,25 @@ function findAddressAndPin(lines: string[]): { address: string; pin: string | nu
   return { address, pin, careOf: careOfPrefix || null };
 }
 
-export function extractAadhaarFields(text: string, blocks: { text: string; box: { x: number; y: number; width: number; height: number } }[]): ExtractedField[] {
-  const lines = text
-    .split(/\r?\n/)
-    .map((line) => line.replace(/[|•]/g, " ").trim())
-    .filter(Boolean);
+function splitWideSpaces(text: string): string[] {
+  return text.split(/\s{3,}/).map(s => s.trim()).filter(Boolean);
+}
 
+function preprocessLines(text: string): string[] {
+  const raw = text.split(/\r?\n/).map(l => l.replace(/[|•]/g, " ").trim()).filter(Boolean);
+  const expanded: string[] = [];
+  for (const line of raw) {
+    expanded.push(...splitWideSpaces(line));
+  }
+  return expanded;
+}
+
+export function extractAadhaarFields(text: string, blocks: { text: string; box: { x: number; y: number; width: number; height: number } }[]): ExtractedField[] {
+  const lines = preprocessLines(text);
   const fields = new Map<FieldKey, ExtractedField>();
 
-  let name = findPvcFrontName(lines) || findEAadhaarName(lines);
-  if (name) addField(fields, "FULL_NAME", name, 0.7);
+  const name = findName(lines);
+  if (name) addField(fields, "FULL_NAME", name, 0.6);
 
   const gender = findGender(text);
   if (gender) addField(fields, "GENDER", gender, 0.82);

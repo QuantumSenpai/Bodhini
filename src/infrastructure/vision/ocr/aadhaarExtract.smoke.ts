@@ -171,5 +171,55 @@ run("Form label: 'UID' resolves to AADHAAR_NO", () => {
   return resolution?.key === "AADHAAR_NO";
 });
 
+const garbageAboveNameText = `सरकार ऑफ इंडिया
+GOVT OF INDIA UIDAI
+RAMESH KUMAR SHARMA
+DOB: 15/08/1985
+MALE
+2918 3746 5026`;
+
+const garbageBlocks = garbageAboveNameText.split("\n").map((line, i) => makeBlock(line, 10, i * 30, 200, 25));
+
+run("Garbage Latin line above name: still extracts correct name", () => {
+  const fields = extractAadhaarFields(garbageAboveNameText, garbageBlocks);
+  const name = fields.find(f => f.key === "FULL_NAME");
+  return name?.value === "RAMESH KUMAR SHARMA" && name.confidence === 0.6;
+});
+
+const nameDobSameLineText = `RAMESH KUMAR SHARMA DOB: 15/08/1985
+MALE
+2918 3746 5026`;
+
+const nameDobBlocks = nameDobSameLineText.split("\n").map((line, i) => makeBlock(line, 10, i * 30, 200, 25));
+
+run("Name and DOB in one line: extracts name from same line", () => {
+  const fields = extractAadhaarFields(nameDobSameLineText, nameDobBlocks);
+  const name = fields.find(f => f.key === "FULL_NAME");
+  return name?.value === "RAMESH KUMAR SHARMA" && name.confidence === 0.6;
+});
+
+const pvcBackText = `Address:
+S/O SHYAM LAL SHARMA
+VILLAGE RAMPUR POST OFFICE
+DISTRICT GHAZIABAD
+UTTAR PRADESH 201001`;
+
+const pvcBackBlocks = pvcBackText.split("\n").map((line, i) => makeBlock(line, 10, i * 30, 300, 25));
+
+run("PVC back with Address block: extracts ADDRESS and PIN", () => {
+  const fields = extractAadhaarFields(pvcBackText, pvcBackBlocks);
+  const address = fields.find(f => f.key === "ADDRESS");
+  const pin = fields.find(f => f.key === "PIN_CODE");
+  const hasAddress = !!address?.value?.includes("VILLAGE RAMPUR") && !!address?.value?.includes("GHAZIABAD");
+  const hasPin = !!pin && pin.value === "201001" && pin.confidence === 0.85;
+  return hasAddress && hasPin;
+});
+
+run("PVC front: no ADDRESS extracted", () => {
+  const fields = extractAadhaarFields(pvcFrontText, pvcBlocks);
+  const address = fields.find(f => f.key === "ADDRESS");
+  return !address;
+});
+
 console.log(`\nPASS: ${passCount}, FAIL: ${failCount}`);
 if (failCount > 0) process.exit(1);
