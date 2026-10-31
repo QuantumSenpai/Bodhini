@@ -29,7 +29,7 @@ export default function ScanCameraScreen() {
     if (!cameraRef.current || !ready || busy) return;
     setBusy(true);
     try {
-      const photo = await cameraRef.current.takePictureAsync({ quality: 0.9, skipProcessing: false });
+      const photo = await cameraRef.current.takePictureAsync({ quality: 1, skipProcessing: true });
       if (photo?.uri) continueWithUri(photo.uri);
       else Alert.alert(t(language, "captureFailed"), t(language, "cameraFailed"));
     } catch {
@@ -44,7 +44,7 @@ export default function ScanCameraScreen() {
         Alert.alert(t(language, "photoAccess"), t(language, "photoAccessText"));
         return;
       }
-      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.9 });
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 1 });
       if (!result.canceled && result.assets[0]?.uri) continueWithUri(result.assets[0].uri);
     } catch {
       Alert.alert(t(language, "photosUnavailable"), t(language, "galleryFailed"));

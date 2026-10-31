@@ -76,7 +76,7 @@ export default function ScanReviewScreen() {
     <PageHeading title={t(language, "reviewInformation")} subtitle={t(language, "checkDetails")} />
     <View style={styles.documentPreview}>
       <Image source={{ uri: pendingDocument.imageUri }} style={styles.previewImage} contentFit="cover" />
-      <View style={{ flex: 1 }}><Text style={styles.previewTitle}>{pendingDocument.analysis.type.replaceAll("_", " ")}</Text><Text style={styles.previewSub}>{pendingDocument.analysis.fields.length} fields detected</Text></View>
+      <View style={{ flex: 1 }}><Text style={styles.previewTitle}>{pendingDocument.analysis.type.replaceAll("_", " ")}</Text><Text style={styles.previewSub}>{pendingDocument.analysis.fields.length} {t(language, "fieldsDetected")}</Text></View>
       <StatusPill label={pendingDocument.analysis.source} tone="green" />
     </View>
     <VoicePromptButton onPress={speakReview} />

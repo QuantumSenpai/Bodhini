@@ -3,24 +3,28 @@ import {
   ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet,
   Text, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { ArrowLeft, ChevronRight, Volume2 } from "lucide-react-native";
 import { colors, radii } from "../../theme/tokens";
+import { t } from "../../i18n/translations";
+import { useBodhini } from "../../state/AppContext";
 
 export function BodhiniScreen({ children, scroll = true, contentStyle, backgroundColor = colors.background }: {
   children: ReactNode; scroll?: boolean; contentStyle?: StyleProp<ViewStyle>; backgroundColor?: string;
 }) {
-  return <SafeAreaView style={[styles.safe, { backgroundColor }]} edges={["top", "left", "right"]}>
+  const insets = useSafeAreaInsets();
+  return <SafeAreaView style={[styles.safe, { backgroundColor }]} edges={["top", "left", "right", "bottom"]}>
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      {scroll ? <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={[styles.content, contentStyle]}>{children}</ScrollView>
-        : <View style={[styles.content, styles.flex, contentStyle]}>{children}</View>}
+      {scroll ? <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 34 }, contentStyle]}>{children}</ScrollView>
+        : <View style={[styles.content, styles.flex, { paddingBottom: insets.bottom + 34 }, contentStyle]}>{children}</View>}
     </KeyboardAvoidingView>
   </SafeAreaView>;
 }
 
 export function TopBar({ title, onBack, right }: { title?: string; onBack?: () => void; right?: ReactNode }) {
+  const { language } = useBodhini();
   return <View style={styles.topBar}>
-    <Pressable onPress={onBack} disabled={!onBack} hitSlop={10} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Go back">
+    <Pressable onPress={onBack} disabled={!onBack} hitSlop={10} style={styles.backButton} accessibilityRole="button" accessibilityLabel={t(language, "goBack")}>
       {onBack ? <ArrowLeft size={22} color={colors.ink} /> : null}
     </Pressable>
     <Text style={styles.topBarTitle}>{title ?? ""}</Text>
@@ -78,7 +82,8 @@ export function StatusPill({ label, tone = "green" }: { label: string; tone?: "g
 }
 export function SectionLabel({ children }: { children: ReactNode }) { return <Text style={styles.sectionLabel}>{children}</Text>; }
 export function VoicePromptButton({ onPress }: { onPress: () => void }) {
-  return <Pressable onPress={onPress} style={styles.voiceButton} accessibilityRole="button" accessibilityLabel="Read this screen aloud"><Volume2 size={17} color={colors.forest} /><Text style={styles.voiceButtonText}>Listen</Text></Pressable>;
+  const { language } = useBodhini();
+  return <Pressable onPress={onPress} style={styles.voiceButton} accessibilityRole="button" accessibilityLabel={t(language, "readScreenAloud")}><Volume2 size={17} color={colors.forest} /><Text style={styles.voiceButtonText}>{t(language, "listen")}</Text></Pressable>;
 }
 export function EmptyState({ title, subtitle, icon }: { title: string; subtitle: string; icon: ReactNode }) {
   return <View style={styles.emptyState}><View style={styles.emptyIcon}>{icon}</View><Text style={styles.emptyTitle}>{title}</Text><Text style={styles.emptySubtitle}>{subtitle}</Text></View>;

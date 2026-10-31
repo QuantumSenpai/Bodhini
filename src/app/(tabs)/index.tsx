@@ -1,7 +1,8 @@
 import React from "react";
-import { Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Camera, FileText, FolderOpen, Flower2, Settings, Sun, Volume2, ShieldCheck } from "lucide-react-native";
+import { Image } from "expo-image";
 import { BodhiniScreen, ActionCard } from "../../components/ui/BodhiniUI";
 import { useBodhini } from "../../state/AppContext";
 import { t } from "../../i18n/translations";
@@ -19,7 +20,7 @@ export default function HomeScreen() {
   return <BodhiniScreen contentStyle={styles.page}>
     <View style={styles.topRow}>
       <View style={styles.brandRow}><Flower2 size={29} color={colors.gold} strokeWidth={1.7} /><Text style={styles.brand}>Bodhini</Text></View>
-      <Pressable style={styles.settingsButton} onPress={() => router.push("/(tabs)/profile")} accessibilityRole="button" accessibilityLabel="Open profile settings"><Settings size={22} color={colors.ink} /></Pressable>
+      <Pressable style={styles.settingsButton} onPress={() => router.push("/(tabs)/profile")} accessibilityRole="button" accessibilityLabel={t(language, "openProfileSettings")}><Settings size={22} color={colors.ink} /></Pressable>
     </View>
     <View style={styles.greetingRow}>
       <View style={{ flex: 1 }}>
@@ -33,7 +34,7 @@ export default function HomeScreen() {
     <ActionCard title={t(language, "locker")} subtitle={t(language, "lockerSub")} icon={<FolderOpen size={25} color={colors.white} />} tint={colors.blue} onPress={() => router.push("/(tabs)/documents")} />
 
     <View style={styles.landscapeCard}>
-      <Image source={require("../../../assets/images/welcome-landscape.png")} style={styles.landscape} resizeMode="cover" />
+      <Image source={require("../../../assets/images/welcome-landscape.png")} style={styles.landscape} contentFit="cover" transition={200} />
       <View style={styles.landscapeOverlay}>
         <Text style={styles.landscapeTitle}>{t(language, "landscapeMessage")}</Text>
       </View>
@@ -55,7 +56,7 @@ const styles = StyleSheet.create({
   greetingRow: { flexDirection: "row", alignItems: "center", marginBottom: 19, gap: 12 },
   greeting: { color: colors.ink, fontFamily: "serif", fontSize: 25, lineHeight: 31, fontWeight: "600" },
   landscapeCard: { height: 146, borderRadius: 20, overflow: "hidden", marginTop: 9, backgroundColor: colors.cardStrong },
-  landscape: { width: "100%", height: "100%", position: "absolute" }, landscapeOverlay: { flex: 1, justifyContent: "flex-end", padding: 17, backgroundColor: "rgba(18,38,31,0.12)" },
+  landscape: { width: "100%", height: "100%", aspectRatio: 16 / 9 }, landscapeOverlay: { flex: 1, justifyContent: "flex-end", padding: 17, backgroundColor: "rgba(18,38,31,0.12)" },
   landscapeTitle: { color: colors.white, fontFamily: "serif", fontSize: 17, fontWeight: "700", textShadowColor: "rgba(0,0,0,.35)", textShadowRadius: 4 },
   privacyNote: { marginTop: 15, flexDirection: "row", alignItems: "center", gap: 9, paddingHorizontal: 12, paddingVertical: 11, backgroundColor: colors.forestLight, borderRadius: 13 },
   privacyText: { color: colors.forest, fontSize: 11, flex: 1, lineHeight: 16 }, listenPrompt: { marginTop: 12, flexDirection: "row", gap: 7, alignItems: "center", alignSelf: "center" }, listenText: { color: colors.forest, fontSize: 12, fontWeight: "600" },
