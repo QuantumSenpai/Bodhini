@@ -1,7 +1,7 @@
 import React from "react";
 import { Alert, Pressable, StyleSheet, Text } from "react-native";
 import { useRouter } from "expo-router";
-import { Camera, ImagePlus, FileText, ScanLine } from "lucide-react-native";
+import { Camera, ImagePlus, FileText, ScanLine, Clipboard } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import { BodhiniScreen, ActionCard, PageHeading, TopBar } from "../../components/ui/BodhiniUI";
 import { useBodhini } from "../../state/AppContext";
@@ -33,7 +33,7 @@ export default function FormSourceScreen() {
   };
 
   const sampleForm = () => {
-    setPendingFormInput({ kind: "SAMPLE", sampleId: "scholarship" });
+    setPendingFormInput({ kind: "SAMPLE", sampleId: "sample" });
     router.push("/forms/analyzing");
   };
 
@@ -43,8 +43,8 @@ export default function FormSourceScreen() {
     <ActionCard title={t(language, "selectImage")} subtitle={t(language, "fromGallery")} icon={<ImagePlus size={25} color={colors.white} />} tint={colors.moss} onPress={() => chooseImage("gallery", "SCREENSHOT")} />
     <ActionCard title={t(language, "uploadPdf")} subtitle={t(language, "pdfUnavailable")} icon={<FileText size={25} color={colors.white} />} tint={colors.terracotta} onPress={() => Alert.alert(t(language, "pdfInputUnavailable"), t(language, "pdfInputBody"))} />
     <ActionCard title={t(language, "screenshot")} subtitle={t(language, "onlineForms")} icon={<ScanLine size={25} color={colors.white} />} tint="#514D3F" onPress={() => chooseImage("gallery", "SCREENSHOT")} />
-    <Pressable onPress={sampleForm} accessibilityRole="button" style={styles.sampleHint}><Text style={styles.sampleHintText}>{t(language, "sampleForm")}</Text></Pressable>
+    <ActionCard title={t(language, "sampleForm")} subtitle={t(language, "sampleFormSub")} icon={<Clipboard size={25} color={colors.white} />} tint={colors.blue} onPress={sampleForm} />
   </BodhiniScreen>;
 }
 
-const styles = StyleSheet.create({ page: { paddingTop: 10 }, sampleHint: { alignSelf: "center", marginTop: 15, padding: 10 }, sampleHintText: { color: colors.forest, textAlign: "center", fontFamily: "serif", fontSize: 15, textDecorationLine: "underline" } });
+const styles = StyleSheet.create({ page: { paddingTop: 10 } });

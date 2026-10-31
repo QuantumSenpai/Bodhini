@@ -23,8 +23,8 @@ export default function WelcomeScreen() {
       <Text style={styles.tagline}>{t(language, "tagline")}</Text>
       <Text style={styles.description}>{t(language, "description")}</Text>
     </View>
-    <View style={styles.landscapeWrap}>
-      <Image source={require("../../assets/images/welcome-landscape.png")} style={styles.landscape} contentFit="cover" transition={200} />
+    <View style={styles.heroWrap}>
+      <Image source={require("../../assets/images/welcome-landscape.png")} style={styles.heroImage} contentFit="cover" transition={200} />
     </View>
     <View style={styles.footer}>
       <PrimaryButton title={t(language, "start")} icon={<ArrowRight size={18} color={colors.white} />} onPress={() => router.push("/(onboarding)/language")} />
@@ -40,8 +40,8 @@ const styles = StyleSheet.create({
   brand: { color: colors.ink, fontFamily: "serif", fontSize: 49, lineHeight: 58, fontWeight: "700", letterSpacing: -1.8 },
   tagline: { textAlign: "center", color: colors.ink, fontFamily: "serif", fontSize: 21, lineHeight: 27, marginTop: 3 },
   description: { textAlign: "center", color: colors.ink, fontFamily: "serif", fontSize: 14, lineHeight: 20, marginTop: 20 },
-  landscapeWrap: { flex: 1, justifyContent: "flex-end", marginTop: -3, marginHorizontal: 0 },
-  landscape: { width: "100%", aspectRatio: 16 / 9 },
+  heroWrap: { flex: 1, marginTop: -3, marginHorizontal: 0 },
+  heroImage: { width: "100%", height: "100%", aspectRatio: 16 / 9 },
   footer: { paddingHorizontal: 25, paddingTop: 10, paddingBottom: 6, backgroundColor: "rgba(244,233,217,0.92)" },
   languages: { color: colors.ink, textAlign: "center", fontFamily: "serif", fontSize: 13, marginTop: 14 },
 });
