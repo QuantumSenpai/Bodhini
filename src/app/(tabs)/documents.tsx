@@ -36,7 +36,7 @@ export default function DocumentsScreen() {
         <View style={[styles.documentIcon, doc.type === "PAN" ? { backgroundColor: "#DCE6ED" } : null]}><FileText color={colors.forest} size={25} /></View>
         <View style={styles.documentText}>
           <Text style={styles.docTitle}>{documentName(doc.type)}</Text>
-          <Text style={styles.docMeta}>{nameField?.value ?? "Name not detected"}</Text>
+          <Text style={styles.docMeta}>{nameField?.value ?? t(language, "documentNameNotDetected")}</Text>
           <Text style={styles.docMeta}>{displayId ?? new Date(doc.confirmedAt).toLocaleDateString()}</Text>
         </View>
         <Text style={styles.chevron}>›</Text>

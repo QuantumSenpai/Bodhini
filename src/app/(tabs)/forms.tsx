@@ -22,8 +22,8 @@ export default function FormSourceScreen() {
         return;
       }
       const result = source === "camera"
-        ? await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], quality: 0.85 })
-        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.85 });
+        ? await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], quality: 1 })
+        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 1 });
       if (result.canceled || !result.assets[0]?.uri) return;
       setPendingFormInput({ kind, uri: result.assets[0].uri });
       router.push("/forms/analyzing");

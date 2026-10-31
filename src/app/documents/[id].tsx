@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Trash2, ShieldCheck } from "lucide-react-native";
+import { Image } from "expo-image";
 import { BodhiniScreen, PageHeading, StatusPill, TopBar } from "../../components/ui/BodhiniUI";
 import { services } from "../../composition/services";
 import type { DocumentRecord } from "../../domain/document/document.types";
@@ -56,7 +57,7 @@ export default function DocumentDetailScreen() {
   return <BodhiniScreen contentStyle={styles.page}>
     <TopBar title={titleFor(record.type)} onBack={() => router.back()} right={<Pressable onPress={deleteRecord} accessibilityRole="button" accessibilityLabel={t(language, "deleteDocument")}><Trash2 color={colors.danger} size={19} /></Pressable>} />
     <PageHeading title={titleFor(record.type)} subtitle={`${t(language, "savedDate")} ${new Date(record.confirmedAt).toLocaleDateString()}`} />
-    {record.imageUri ? <Image source={{ uri: record.imageUri }} style={styles.image} resizeMode="cover" /> : null}
+    {record.imageUri ? <Image source={{ uri: record.imageUri }} style={styles.image} contentFit="cover" transition={200} /> : null}
     <View style={styles.sourceRow}><StatusPill label={t(language, "userConfirmed")} tone="green" /><Text style={styles.sourceText}>{t(language, "savedLocally")}</Text></View>
     {record.fields.map((field) => {
       const sensitive = field.key === "AADHAAR_NO";
@@ -69,7 +70,7 @@ export default function DocumentDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: { paddingTop: 8 }, loading: { color: colors.muted, textAlign: "center", marginTop: 100 }, image: { width: "100%", height: 175, borderRadius: 16, backgroundColor: colors.cardStrong, marginBottom: 15 },
+  page: { paddingTop: 8 }, loading: { color: colors.muted, textAlign: "center", marginTop: 100 }, image: { width: "100%", aspectRatio: 16 / 9, borderRadius: 16, backgroundColor: colors.cardStrong, marginBottom: 15 },
   sourceRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }, sourceText: { color: colors.muted, fontSize: 11 },
   fieldRow: { paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: colors.line }, fieldLabel: { color: colors.muted, fontSize: 11, marginBottom: 5 }, fieldValue: { color: colors.ink, fontSize: 15 },
   reveal: { alignSelf: "flex-start", paddingVertical: 12 }, revealText: { color: colors.forest, fontSize: 12, fontWeight: "700" },

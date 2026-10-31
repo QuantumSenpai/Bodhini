@@ -1,7 +1,8 @@
 import React, { useEffect } from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Flower2, ArrowRight } from "lucide-react-native";
+import { Image } from "expo-image";
 import { BodhiniScreen, PrimaryButton } from "../components/ui/BodhiniUI";
 import { useBodhini } from "../state/AppContext";
 import { colors } from "../theme/tokens";
@@ -19,11 +20,11 @@ export default function WelcomeScreen() {
     <View style={styles.top}>
       <View style={styles.lotus}><Flower2 size={52} color={colors.gold} strokeWidth={1.5} /></View>
       <Text style={styles.brand}>Bodhini</Text>
-      <Text style={styles.tagline}>{language === "bn" ? "একবার স্ক্যান করুন।\nযেকোনো ফর্ম পূরণ করুন।" : language === "hi" ? "एक बार स्कैन करें।\nकोई भी फ़ॉर्म भरें।" : "Scan once.\nFill any form."}</Text>
-      <Text style={styles.description}>{language === "bn" ? "আপনার নথির সহায়ক\nআরও স্বনির্ভর জীবনের জন্য।" : language === "hi" ? "आपका दस्तावेज़ सहायक\nएक अधिक आत्मनिर्भर कल के लिए।" : "Your document assistant\nfor a more independent\ntomorrow."}</Text>
+      <Text style={styles.tagline}>{t(language, "tagline")}</Text>
+      <Text style={styles.description}>{t(language, "description")}</Text>
     </View>
     <View style={styles.landscapeWrap}>
-      <Image source={require("../../assets/images/welcome-landscape.png")} style={styles.landscape} resizeMode="cover" />
+      <Image source={require("../../assets/images/welcome-landscape.png")} style={styles.landscape} contentFit="cover" transition={200} />
     </View>
     <View style={styles.footer}>
       <PrimaryButton title={t(language, "start")} icon={<ArrowRight size={18} color={colors.white} />} onPress={() => router.push("/(onboarding)/language")} />
@@ -40,7 +41,7 @@ const styles = StyleSheet.create({
   tagline: { textAlign: "center", color: colors.ink, fontFamily: "serif", fontSize: 21, lineHeight: 27, marginTop: 3 },
   description: { textAlign: "center", color: colors.ink, fontFamily: "serif", fontSize: 14, lineHeight: 20, marginTop: 20 },
   landscapeWrap: { flex: 1, justifyContent: "flex-end", marginTop: -3, marginHorizontal: 0 },
-  landscape: { width: "100%", height: "100%", position: "absolute", bottom: 0 },
+  landscape: { width: "100%", aspectRatio: 16 / 9 },
   footer: { paddingHorizontal: 25, paddingTop: 10, paddingBottom: 6, backgroundColor: "rgba(244,233,217,0.92)" },
   languages: { color: colors.ink, textAlign: "center", fontFamily: "serif", fontSize: 13, marginTop: 14 },
 });
