@@ -12,6 +12,7 @@ export const FIELD_SYNONYMS: Record<FieldKey, string[]> = {
     "name of applicant",
     "name of candidate",
     "person name",
+    "name",
     // Hindi
     "पूरा नाम",
     "आवेदक का नाम",
@@ -124,6 +125,10 @@ export const FIELD_SYNONYMS: Record<FieldKey, string[]> = {
     "aadhar",
     "aadhar no",
     "aadhar number",
+    "aadhaar card no",
+    "aadhar card no",
+    "addhar card no",
+    "adhar card no",
     "uid",
     "uidai",
     // Hindi
@@ -237,7 +242,6 @@ export const SIGNATURE_DECLARATION_KEYWORDS: string[] = [
  * Generic standalone words that MUST NEVER alone trigger an automatic match.
  */
 const GENERIC_STANDALONE_WORDS = new Set([
-  "name",
   "no",
   "date",
   "number",
