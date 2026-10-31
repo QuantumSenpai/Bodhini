@@ -15,6 +15,7 @@ import {
   SQLiteDocumentRepository,
   ISQLiteDatabase,
 } from "../src/infrastructure/storage/sqlite-document-repository";
+import { runSQLiteSmokeTest } from "../src/infrastructure/storage/sqlite-test-action";
 import { FieldValidator } from "../src/infrastructure/validation/field-validator";
 import { FieldMatcher } from "../src/infrastructure/matching/field-matcher";
 import { CopyListBuilder } from "../src/infrastructure/export/copy-list-builder";
@@ -379,6 +380,25 @@ describe("Backend B — Data Engine Synthetic Tests", () => {
       // Subsequent call retries and succeeds cleanly
       const docs = await repo.getAll();
       assert.deepEqual(docs, [], "Retried call must succeed after transient failure clears");
+    });
+
+    it("should execute the full 6-step SQLite test action successfully", async () => {
+      const adapter = new NodeSQLiteTestAdapter(":memory:");
+      const repo = new SQLiteDocumentRepository(adapter);
+
+      const capturedLogs: string[] = [];
+      const result = await runSQLiteSmokeTest(repo, (msg) => capturedLogs.push(msg));
+
+      assert.equal(result.success, true, "Smoke test action should succeed");
+      assert.ok(result.sampleDocId);
+      assert.equal(capturedLogs.length > 0, true);
+      assert.ok(capturedLogs.some((l) => l.includes("[Step 1/6]")));
+      assert.ok(capturedLogs.some((l) => l.includes("[Step 2/6]")));
+      assert.ok(capturedLogs.some((l) => l.includes("[Step 3/6]")));
+      assert.ok(capturedLogs.some((l) => l.includes("[Step 4/6]")));
+      assert.ok(capturedLogs.some((l) => l.includes("[Step 5/6]")));
+      assert.ok(capturedLogs.some((l) => l.includes("[Step 6/6]")));
+      assert.ok(capturedLogs.some((l) => l.includes("All 6 Steps Succeeded")));
     });
   });
 
