@@ -4,6 +4,7 @@
   "main": "expo-router/entry",
   "dependencies": {
     "@expo/ui": "~58.0.25",
+    "@react-native-ml-kit/text-recognition": "^2.0.0",
     "expo": "~58.0.21",
     "expo-constants": "~58.0.14",
     "expo-dev-client": "~58.0.17",
