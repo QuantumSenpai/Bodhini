@@ -1,280 +1,353 @@
 import React, { useEffect } from "react";
-import { View, StyleSheet, type ViewStyle, Text, Pressable } from "react-native";
-import { useSharedValue, useAnimatedStyle, withTiming, withSpring, Easing, withRepeat } from "react-native-reanimated";
+import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
+import Animated, {
+  cancelAnimation,
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
+import { Check, Copy } from "lucide-react-native";
+import { useBodhini } from "../../state/AppContext";
+import { useTheme } from "../../theme/ThemeProvider";
+import { FadeInUp, PressableScale, useScreenFocused } from "./PressableScale";
 
-export function Cloud({ color = "#FFFFFF", opacity = 0.6, speed = 20000, width = 80, height = 28, y = 0, style }: {
-  color?: string;
-  opacity?: number;
-  speed?: number;
-  width?: number;
-  height?: number;
-  y?: number;
-  style?: ViewStyle;
-}) {
-  const translateX = useSharedValue(-width - 50);
-
-  useEffect(() => {
-    translateX.value = withTiming(350, { duration: speed, easing: Easing.linear }, () => {
-      translateX.value = -width - 50;
-    });
-  }, [translateX, speed, width]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }],
-  }));
-
-  return (
-    <View style={[styles.cloud, { width, height, backgroundColor: color, opacity, top: y }, style, animatedStyle] as any} />
-  );
-}
-
-export function FloatingCard({ children, floatDuration = 3500, rotateAmplitude = 1.5, style }: {
-  children: React.ReactNode;
-  floatDuration?: number;
-  rotateAmplitude?: number;
-  style?: ViewStyle;
-}) {
-  const translateY = useSharedValue(0);
-  const rotate = useSharedValue(0);
-
-  useEffect(() => {
-    translateY.value = withRepeat(
-      withTiming(6, { duration: floatDuration / 2, easing: Easing.inOut(Easing.ease) }),
-      -1,
-      true
-    );
-    rotate.value = withRepeat(
-      withTiming(rotateAmplitude, { duration: floatDuration / 2, easing: Easing.inOut(Easing.ease) }),
-      -1,
-      true
-    );
-  }, [translateY, rotate, floatDuration, rotateAmplitude]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }, { rotate: `${rotate.value}deg` }],
-  }));
-
-  return <View style={[styles.floatingCard, style, animatedStyle] as any}>{children}</View>;
-}
-
-export function ScanLine({ color = "#7FD8A8", height = 2, duration = 1800, style }: {
+export function ScanLine({
+  color,
+  height = 2,
+  duration = 1600,
+  travel = 150,
+  style,
+}: {
   color?: string;
   height?: number;
   duration?: number;
-  style?: ViewStyle;
+  travel?: number;
+  style?: StyleProp<ViewStyle>;
 }) {
-  const progress = useSharedValue(0);
+  const { reduceMotion } = useBodhini();
+  const { colors } = useTheme();
+  const isFocused = useScreenFocused();
+  const translateY = useSharedValue(0);
+  const opacity = useSharedValue(1);
+  const lineColor = color ?? colors.primary;
 
   useEffect(() => {
-    progress.value = withRepeat(
-      withTiming(1, { duration, easing: Easing.linear }),
-      -1
+    if (!isFocused || reduceMotion) {
+      cancelAnimation(translateY);
+      translateY.value = travel * 0.45;
+      opacity.value = 0.7;
+      return;
+    }
+    translateY.value = 0;
+    opacity.value = 1;
+    translateY.value = withRepeat(
+      withTiming(travel, { duration, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      true,
     );
-  }, [progress, duration]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    top: `${progress.value * 100}%`,
-  }));
-
-  return <View style={[styles.scanLine, { backgroundColor: color, height }, style, animatedStyle] as any} />;
-}
-
-export function Star({ size = 4, color = "#FFFFFF", twinkleDuration = 3000, delay = 0, style }: {
-  size?: number;
-  color?: string;
-  twinkleDuration?: number;
-  delay?: number;
-  style?: ViewStyle;
-}) {
-  const opacity = useSharedValue(0.3);
-
-  useEffect(() => {
-    const animate = () => {
-      opacity.value = withTiming(1, { duration: twinkleDuration, easing: Easing.inOut(Easing.ease) }, () => {
-        opacity.value = withTiming(0.3, { duration: twinkleDuration, easing: Easing.inOut(Easing.ease) }, () => {
-          animate();
-        });
-      });
+    return () => {
+      cancelAnimation(translateY);
     };
-    setTimeout(animate, delay);
-  }, [opacity, twinkleDuration, delay]);
+  }, [duration, isFocused, opacity, reduceMotion, translateY, travel]);
 
   const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
     opacity: opacity.value,
   }));
 
-  return <View style={[styles.star, { width: size, height: size, backgroundColor: color, borderRadius: size / 2 }, style, animatedStyle] as any} />;
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        styles.scanLine,
+        { backgroundColor: lineColor, height },
+        style,
+        animatedStyle,
+      ]}
+    />
+  );
 }
 
-export function StaggeredReveal({ children, staggerDelay = 60, duration = 220, style }: {
+export function StaggeredReveal({
+  children,
+  staggerDelay = 40,
+  duration = 220,
+  style,
+}: {
   children: React.ReactNode;
   staggerDelay?: number;
   duration?: number;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }) {
-  const { Children } = React;
-  const childArray = Children.toArray(children);
-  const animatedChildren = childArray.map((child, index) => {
-    if (!React.isValidElement(child)) return child;
-    const translateY = useSharedValue(12);
-    const opacity = useSharedValue(0);
-
-    useEffect(() => {
-      translateY.value = withTiming(0, { duration, easing: Easing.out(Easing.cubic) });
-      opacity.value = withTiming(1, { duration, easing: Easing.out(Easing.cubic) });
-    }, [translateY, opacity, duration]);
-
-    const animatedStyle = useAnimatedStyle(() => ({
-      transform: [{ translateY: translateY.value }],
-      opacity: opacity.value,
-    }));
-
-    const childStyle = (child.props as any).style;
-    return React.cloneElement(child as React.ReactElement<any>, { style: [childStyle, animatedStyle] as any });
-  });
-
-  return <View style={style}>{animatedChildren}</View>;
-}
-
-export function AnimatedCheck({ size = 64, strokeColor = "#7FD8A8", strokeWidth = 3, style, onComplete }: {
-  size?: number;
-  strokeColor?: string;
-  strokeWidth?: number;
-  style?: ViewStyle;
-  onComplete?: () => void;
-}) {
-  const circleProgress = useSharedValue(0);
-  const checkProgress = useSharedValue(0);
-
-  useEffect(() => {
-    circleProgress.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.cubic) }, () => {
-      checkProgress.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.back(1.5)) }, () => {
-        onComplete?.();
-      });
-    });
-  }, [circleProgress, checkProgress]);
-
-  const circleStyle = useAnimatedStyle(() => ({
-    width: circleProgress.value * size,
-    height: circleProgress.value * size,
-    borderRadius: (circleProgress.value * size) / 2,
-    borderWidth: strokeWidth,
-    borderColor: strokeColor,
-  }));
-
-  const checkStyle = useAnimatedStyle(() => ({
-    opacity: checkProgress.value,
-    transform: [{ scale: checkProgress.value }],
-  }));
-
+  const childArray = React.Children.toArray(children);
   return (
-    <View style={[styles.checkContainer, { width: size, height: size }, style] as any}>
-      <View style={styles.svgWrapper}>
-        <View style={[styles.checkCircle, circleStyle] as any} />
-      </View>
-      <View style={[styles.checkMark, checkStyle] as any}>
-        <View style={[styles.checkStroke, { backgroundColor: strokeColor, width: strokeWidth, height: size * 0.2 }] as any} />
-        <View style={[styles.checkStroke, { backgroundColor: strokeColor, width: strokeWidth, height: size * 0.45 }, styles.checkStrokeLong] as any} />
-      </View>
+    <View style={style}>
+      {childArray.map((child, index) => (
+        <FadeInUp key={index} index={index} delay={index * staggerDelay} duration={duration}>
+          {child}
+        </FadeInUp>
+      ))}
     </View>
   );
 }
 
-export function ConfettiFreeGlow({ color = "#7FD8A8", size = 120, style }: {
-  color?: string;
+export function AnimatedCheck({
+  size = 64,
+  strokeColor,
+  fillColor,
+  style,
+  onComplete,
+}: {
   size?: number;
-  style?: ViewStyle;
+  strokeColor?: string;
+  strokeWidth?: number;
+  fillColor?: string;
+  style?: StyleProp<ViewStyle>;
+  onComplete?: () => void;
 }) {
-  const scale = useSharedValue(0.5);
-  const opacity = useSharedValue(1);
+  const { reduceMotion } = useBodhini();
+  const { colors } = useTheme();
+  const circleScale = useSharedValue(reduceMotion ? 1 : 0.2);
+  const circleOpacity = useSharedValue(reduceMotion ? 1 : 0);
+  const checkScale = useSharedValue(reduceMotion ? 1 : 0.2);
+  const checkOpacity = useSharedValue(reduceMotion ? 1 : 0);
 
   useEffect(() => {
-    scale.value = withSpring(1.2, { damping: 12, stiffness: 100 });
-    opacity.value = withTiming(0, { duration: 600, easing: Easing.out(Easing.cubic) });
-  }, [scale, opacity]);
+    if (reduceMotion) {
+      circleScale.value = 1;
+      circleOpacity.value = 1;
+      checkScale.value = 1;
+      checkOpacity.value = 1;
+      onComplete?.();
+      return;
+    }
+    circleOpacity.value = withTiming(1, { duration: 180 });
+    circleScale.value = withSpring(1, { damping: 15, stiffness: 200 });
+    const timer = setTimeout(() => {
+      checkOpacity.value = withTiming(1, { duration: 160 });
+      checkScale.value = withSpring(1, { damping: 14, stiffness: 220 });
+      onComplete?.();
+    }, 140);
+    return () => clearTimeout(timer);
+  }, [checkOpacity, checkScale, circleOpacity, circleScale, onComplete, reduceMotion]);
+
+  const circleStyle = useAnimatedStyle(() => ({
+    opacity: circleOpacity.value,
+    transform: [{ scale: circleScale.value }],
+  }));
+
+  const checkStyle = useAnimatedStyle(() => ({
+    opacity: checkOpacity.value,
+    transform: [{ scale: checkScale.value }],
+  }));
+
+  const resolvedFill = fillColor ?? colors.success;
+  const resolvedStroke = strokeColor ?? colors.onPrimary;
+
+  return (
+    <View style={[styles.checkContainer, { width: size, height: size }, style]}>
+      <Animated.View
+        style={[
+          styles.checkCircle,
+          {
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            backgroundColor: resolvedFill,
+          },
+          circleStyle,
+        ]}
+      />
+      <Animated.View style={[styles.checkIconWrap, checkStyle]}>
+        <Check size={Math.round(size * 0.48)} color={resolvedStroke} strokeWidth={3} />
+      </Animated.View>
+    </View>
+  );
+}
+
+export function ConfettiFreeGlow({
+  color,
+  size = 112,
+  style,
+}: {
+  color?: string;
+  size?: number;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const { reduceMotion } = useBodhini();
+  const { colors } = useTheme();
+  const scale = useSharedValue(0.6);
+  const opacity = useSharedValue(reduceMotion ? 0 : 0.45);
+  const resolvedColor = color ?? colors.success;
+
+  useEffect(() => {
+    if (reduceMotion) {
+      opacity.value = 0;
+      return;
+    }
+    scale.value = withSpring(1.25, { damping: 16, stiffness: 120 });
+    opacity.value = withTiming(0, { duration: 550, easing: Easing.out(Easing.cubic) });
+  }, [opacity, reduceMotion, scale]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
     opacity: opacity.value,
   }));
 
-  return <View style={[styles.glow, { width: size, height: size, backgroundColor: color, borderRadius: size / 2 }, style, animatedStyle] as any} />;
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        styles.glow,
+        { width: size, height: size, borderRadius: size / 2, backgroundColor: resolvedColor },
+        style,
+        animatedStyle,
+      ]}
+    />
+  );
 }
 
-export function CopyMorphButton({ label, copiedLabel, isCopied, onPress, style, disabled }: {
+export function CopyMorphButton({
+  label,
+  copiedLabel,
+  isCopied,
+  onPress,
+  style,
+  disabled,
+  hint,
+}: {
   label: string;
   copiedLabel: string;
   isCopied: boolean;
   onPress: () => void;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   disabled?: boolean;
+  hint?: string;
 }) {
-  const scale = useSharedValue(1);
-  const opacity = useSharedValue(1);
-  const showCheck = useSharedValue(0);
-
-  useEffect(() => {
-    if (isCopied) {
-      opacity.value = withTiming(0, { duration: 100 }, () => {
-        showCheck.value = withSpring(1, { damping: 18, stiffness: 180 });
-        opacity.value = withTiming(1, { duration: 100 });
-      });
-      const timer = setTimeout(() => {
-        showCheck.value = withSpring(0, { damping: 18, stiffness: 180 });
-        opacity.value = withTiming(0, { duration: 100 }, () => {
-          opacity.value = withTiming(1, { duration: 100 });
-        });
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [isCopied, opacity, showCheck]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
+  const { colors, theme } = useTheme();
 
   return (
-    <Pressable onPress={onPress} disabled={disabled} style={[styles.copyButton, style, animatedStyle] as any} hitSlop={8}>
+    <PressableScale
+      onPress={onPress}
+      disabled={disabled}
+      hint={hint}
+      accessibilityRole="button"
+      accessibilityLabel={isCopied ? copiedLabel : label}
+      style={[
+        styles.copyButton,
+        {
+          backgroundColor: isCopied ? colors.success : colors.primary,
+          opacity: disabled ? 0.5 : 1,
+        },
+        style,
+      ]}
+    >
       <View style={styles.copyContent}>
-        <Text style={styles.copyText}>{isCopied ? copiedLabel : label}</Text>
-        <View style={[styles.checkIcon, { opacity: showCheck.value, transform: [{ scale: showCheck.value }] }] as any}>
-          <View style={styles.checkShort} />
-          <View style={styles.checkLong} />
-        </View>
+        {isCopied ? (
+          <Check size={18} color={colors.onPrimary} strokeWidth={2.5} />
+        ) : (
+          <Copy size={18} color={colors.onPrimary} />
+        )}
+        <Text style={[styles.copyText, { color: colors.onPrimary, fontSize: theme.typeScale.button.fontSize }]}>
+          {isCopied ? copiedLabel : label}
+        </Text>
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }
 
-export function EmptyStateIllustration({ style }: { style?: ViewStyle }) {
+export function EmptyStateIllustration({ style }: { style?: StyleProp<ViewStyle> }) {
+  const { colors } = useTheme();
   return (
-    <View style={[styles.emptyIllustration, style] as any}>
-      <View style={styles.emptyFolder} />
-      <View style={styles.emptyDocument} />
+    <View style={[styles.emptyIllustration, style]}>
+      <View style={[styles.emptyBackCard, { backgroundColor: colors.surfaceAlt, borderColor: colors.separator }]} />
+      <View style={[styles.emptyFrontCard, { backgroundColor: colors.surface, borderColor: colors.primary }]}>
+        <View style={[styles.emptyLineShort, { backgroundColor: colors.primary }]} />
+        <View style={[styles.emptyLineLong, { backgroundColor: colors.separator }]} />
+        <View style={[styles.emptyLineMid, { backgroundColor: colors.separator }]} />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  cloud: { position: "absolute", borderRadius: 14 },
-  floatingCard: {},
-  scanLine: { position: "absolute", left: 0, right: 0, top: 0 },
-  star: { position: "absolute" },
-  checkContainer: { alignItems: "center", justifyContent: "center", position: "relative" },
-  svgWrapper: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center" },
-  checkCircle: { borderWidth: 3, borderColor: "#7FD8A8", borderRadius: 999 },
-  checkMark: { position: "absolute", flexDirection: "row", alignItems: "flex-end", gap: 3 },
-  checkStroke: { borderRadius: 2 },
-  checkStrokeLong: { transform: [{ rotate: "45deg" }] },
-  glow: { position: "absolute", borderRadius: 999 },
-  copyButton: { alignItems: "center", justifyContent: "center" },
-  copyContent: { flexDirection: "row", alignItems: "center", gap: 6 },
-  copyText: { fontSize: 14, fontWeight: "600" },
-  checkIcon: { width: 18, height: 18, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 2 },
-  checkShort: { width: 5, height: 2, backgroundColor: "#FFFFFF", borderRadius: 1, transform: [{ rotate: "-45deg" }] },
-  checkLong: { width: 10, height: 2, backgroundColor: "#FFFFFF", borderRadius: 1, transform: [{ rotate: "45deg" }] },
-  emptyIllustration: { alignItems: "center", gap: 8 },
-  emptyFolder: { width: 48, height: 36, borderRadius: 8, borderWidth: 2, borderColor: "#D4A01E", borderTopLeftRadius: 4 },
-  emptyDocument: { width: 36, height: 44, borderRadius: 6, borderWidth: 1.5, borderColor: "#D4A01E", marginTop: -12, marginLeft: 8 },
+  scanLine: {
+    position: "absolute",
+    left: 12,
+    right: 12,
+    top: 8,
+    borderRadius: 2,
+  },
+  checkContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+  },
+  checkCircle: {
+    position: "absolute",
+  },
+  checkIconWrap: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  glow: {
+    position: "absolute",
+  },
+  copyButton: {
+    minHeight: 54,
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  copyContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  copyText: {
+    fontWeight: "600",
+  },
+  emptyIllustration: {
+    width: 72,
+    height: 64,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyBackCard: {
+    position: "absolute",
+    width: 44,
+    height: 54,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    transform: [{ rotate: "-8deg" }, { translateX: -6 }],
+  },
+  emptyFrontCard: {
+    width: 44,
+    height: 54,
+    borderRadius: 10,
+    borderWidth: 2,
+    padding: 8,
+    gap: 6,
+    justifyContent: "center",
+    transform: [{ rotate: "4deg" }, { translateX: 4 }],
+  },
+  emptyLineShort: {
+    width: 16,
+    height: 4,
+    borderRadius: 2,
+  },
+  emptyLineLong: {
+    width: 26,
+    height: 3,
+    borderRadius: 2,
+  },
+  emptyLineMid: {
+    width: 20,
+    height: 3,
+    borderRadius: 2,
+  },
 });

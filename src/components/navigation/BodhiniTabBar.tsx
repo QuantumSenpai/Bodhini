@@ -1,146 +1,244 @@
 import React, { useEffect } from "react";
-import { Pressable, StyleSheet, Text, View, type ViewStyle } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { Home, FolderOpen, FileText, UserRound, Mic, Sun, Moon, Monitor } from "lucide-react-native";
+import { CreditCard, Ellipsis, FileText, Home, Plus } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import type { AppLanguage } from "../../domain/document/document.types";
 import { useBodhini } from "../../state/AppContext";
-import { t } from "../../i18n/translations";
+import { t, type TranslationKey } from "../../i18n/translations";
 import { useTheme } from "../../theme/ThemeProvider";
-import { useSharedValue, useAnimatedStyle, withSpring, withTiming, Easing, withRepeat } from "react-native-reanimated";
+import { Hint, PressableScale } from "../motion";
 
-const iconFor = (name: string, color: string, size: number) => {
-  if (name === "index") return <Home color={color} size={size} />;
-  if (name === "documents") return <FolderOpen color={color} size={size} />;
-  if (name === "forms") return <FileText color={color} size={size} />;
-  return <UserRound color={color} size={size} />;
-};
+const tabs = ["index", "documents", "forms", "profile"] as const;
+type TabRoute = (typeof tabs)[number];
 
-const labelFor = (name: string, language: AppLanguage) => {
+function iconFor(name: TabRoute, color: string, size: number) {
+  if (name === "index") return <Home color={color} size={size} strokeWidth={2.1} />;
+  if (name === "documents") return <CreditCard color={color} size={size} strokeWidth={2.1} />;
+  if (name === "forms") return <FileText color={color} size={size} strokeWidth={2.1} />;
+  return <Ellipsis color={color} size={size} strokeWidth={2.2} />;
+}
+
+function labelFor(name: TabRoute, language: AppLanguage) {
   if (name === "index") return t(language, "home");
   if (name === "documents") return t(language, "documents");
   if (name === "forms") return t(language, "forms");
   return t(language, "profile");
-};
+}
 
-const tabs = ["index", "documents", "forms", "profile"] as const;
-const TAB_WIDTH = 72;
-const INDICATOR_HEIGHT = 44;
-const INDICATOR_RADIUS = 22;
+function hintKeyFor(name: TabRoute): TranslationKey {
+  if (name === "index") return "hintTabHome";
+  if (name === "documents") return "hintTabWallet";
+  if (name === "forms") return "hintTabForms";
+  return "hintTabMore";
+}
+
+const TabBarItem = React.memo(function TabBarItem({
+  name,
+  focused,
+  language,
+  reduceMotion,
+  onPress,
+}: {
+  name: TabRoute;
+  focused: boolean;
+  language: AppLanguage;
+  reduceMotion: boolean;
+  onPress: (route: TabRoute) => void;
+}) {
+  const { colors } = useTheme();
+  const scale = useSharedValue(focused ? 1.1 : 1);
+  const labelOpacity = useSharedValue(focused ? 1 : 0.78);
+  const pillScale = useSharedValue(focused ? 1 : 0);
+
+  useEffect(() => {
+    if (reduceMotion) {
+      scale.value = 1;
+      labelOpacity.value = focused ? 1 : 0.78;
+      pillScale.value = focused ? 1 : 0;
+      return;
+    }
+    scale.value = withSpring(focused ? 1.1 : 1, { damping: 16, stiffness: 220 });
+    labelOpacity.value = withTiming(focused ? 1 : 0.78, { duration: 150 });
+    pillScale.value = withSpring(focused ? 1 : 0, { damping: 18, stiffness: 220 });
+  }, [focused, labelOpacity, pillScale, reduceMotion, scale]);
+
+  const iconAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const labelAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: labelOpacity.value,
+  }));
+
+  const pillAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: pillScale.value,
+    transform: [{ scaleX: pillScale.value }],
+  }));
+
+  const activeColor = colors.forest;
+  const inactiveColor = colors.secondaryText;
+  const label = labelFor(name, language);
+  const hint = t(language, hintKeyFor(name));
+
+  return (
+    <Hint hint={hint} label={label} role="tab" style={styles.tabWrap}>
+      <PressableScale
+        onPress={() => onPress(name)}
+        accessibilityRole="tab"
+        accessibilityLabel={label}
+        accessibilityState={{ selected: focused }}
+        style={styles.tab}
+      >
+        <View style={styles.iconBox}>
+          <Animated.View style={[styles.activePill, { backgroundColor: colors.forestLight }, pillAnimatedStyle]} />
+          <Animated.View style={iconAnimatedStyle}>
+            {iconFor(name, focused ? activeColor : inactiveColor, 22)}
+          </Animated.View>
+        </View>
+        <Animated.Text
+          numberOfLines={1}
+          style={[
+            styles.label,
+            { color: focused ? activeColor : inactiveColor, fontWeight: focused ? "600" : "500" },
+            labelAnimatedStyle,
+          ]}
+        >
+          {label}
+        </Animated.Text>
+      </PressableScale>
+    </Hint>
+  );
+});
 
 export function BodhiniTabBar({ state }: any) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { language, interactionMode } = useBodhini();
-  const { colors, isDark } = useTheme();
+  const { language, reduceMotion } = useBodhini();
+  const { colors } = useTheme();
 
-  const focusedIndex = tabs.findIndex((t) => state.routes[state.index]?.name === t);
-  const indicatorX = useSharedValue(focusedIndex * TAB_WIDTH);
-  const indicatorWidth = useSharedValue(TAB_WIDTH);
+  const activeRouteName = state?.routes?.[state.index]?.name ?? "index";
+  const focusedIndex = tabs.findIndex((item) => item === activeRouteName);
 
-  const micScale = useSharedValue(1);
-  const micGlow = useSharedValue(0.3);
+  const handleTabPress = React.useCallback((routeName: TabRoute) => {
+    router.navigate((routeName === "index" ? "/(tabs)" : "/(tabs)/" + routeName) as any);
+  }, [router]);
 
-  useEffect(() => {
-    micGlow.value = withRepeat(
-      withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
-      -1,
-      true
-    );
-  }, [micGlow]);
-
-  const handleTabPress = (routeName: typeof tabs[number]) => {
-    const index = tabs.indexOf(routeName);
-    if (index >= 0) {
-      indicatorX.value = withSpring(index * TAB_WIDTH, { damping: 18, stiffness: 180 });
-      router.navigate((routeName === "index" ? "/(tabs)" : "/(tabs)/" + routeName) as any);
-    }
-  };
-
-  const handleVoicePress = () => {
-    micScale.value = withSpring(0.9, { damping: 12, stiffness: 200 }, () => {
-      micScale.value = withSpring(1, { damping: 12, stiffness: 200 });
-    });
-    Alert.alert(t(language, "voiceUnderDevelopmentTitle"), t(language, "voiceUnderDevelopmentMessage"));
-  };
-
-  const indicatorStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: indicatorX.value }],
-    width: indicatorWidth.value,
-  }));
-
-  const micAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: micScale.value }],
-  }));
-
-  const micGlowStyle = useAnimatedStyle(() => ({
-    opacity: micGlow.value,
-  }));
+  const handleScanPress = React.useCallback(() => {
+    router.push("/scan/camera");
+  }, [router]);
 
   const leftTabs = tabs.slice(0, 2);
   const rightTabs = tabs.slice(2);
+  const scanLabel = t(language, "scan");
+  const scanHint = t(language, "hintTabScan");
 
   return (
-    <View style={[styles.bar, { backgroundColor: colors.surface, borderTopColor: colors.border, paddingBottom: insets.bottom }] as any}>
+    <View
+      style={[
+        styles.bar,
+        {
+          backgroundColor: colors.surface,
+          borderTopColor: colors.separator,
+          paddingBottom: Math.max(insets.bottom, 8),
+        },
+      ]}
+    >
       <View style={styles.group}>
         {leftTabs.map((name, i) => (
-          <Pressable
+          <TabBarItem
             key={name}
-            onPress={() => handleTabPress(name)}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: focusedIndex === i }}
-            hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
-            style={styles.tab}
-          >
-            {iconFor(name, focusedIndex === i ? colors.primary : colors.textMuted, 22)}
-            <Text style={[styles.label, focusedIndex === i && { color: colors.primary, fontWeight: "700" }] as any}>{labelFor(name, language)}</Text>
-          </Pressable>
+            name={name}
+            focused={focusedIndex === i}
+            language={language}
+            reduceMotion={reduceMotion}
+            onPress={handleTabPress}
+          />
         ))}
       </View>
 
-      <Pressable
-        style={[{ backgroundColor: colors.primary }, styles.voice, micAnimatedStyle] as any}
-        onPress={handleVoicePress}
-        accessibilityRole="button"
-        accessibilityLabel={t(language, "voiceUnderDevelopmentTitle")}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-      >
-        <Mic color={colors.onPrimary} size={22} />
-        <View style={[styles.micGlow, { backgroundColor: colors.primary }, micGlowStyle] as any} />
-      </Pressable>
+      <Hint hint={scanHint} label={scanLabel} role="button">
+        <PressableScale
+          onPress={handleScanPress}
+          accessibilityRole="button"
+          accessibilityLabel={scanLabel}
+          style={[styles.centerPlus, { backgroundColor: colors.primary }]}
+        >
+          <Plus color={colors.onPrimary} size={26} strokeWidth={2.6} />
+        </PressableScale>
+      </Hint>
 
       <View style={styles.group}>
         {rightTabs.map((name, i) => (
-          <Pressable
+          <TabBarItem
             key={name}
-            onPress={() => handleTabPress(name)}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: focusedIndex === i + 2 }}
-            hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
-            style={styles.tab}
-          >
-            {iconFor(name, focusedIndex === i + 2 ? colors.primary : colors.textMuted, 22)}
-            <Text style={[styles.label, focusedIndex === i + 2 && { color: colors.primary, fontWeight: "700" }] as any}>{labelFor(name, language)}</Text>
-          </Pressable>
+            name={name}
+            focused={focusedIndex === i + 2}
+            language={language}
+            reduceMotion={reduceMotion}
+            onPress={handleTabPress}
+          />
         ))}
-      </View>
-
-      <View style={[styles.indicatorTrack, { backgroundColor: colors.surfaceAlt }] as any}>
-        <View style={[styles.indicator, { backgroundColor: colors.primary }, indicatorStyle] as any} />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  bar: { flexDirection: "row", alignItems: "center", justifyContent: "space-around", borderTopWidth: 1, paddingTop: 10, paddingHorizontal: 12, minHeight: 80, position: "relative" },
-  group: { flex: 1, flexDirection: "row", justifyContent: "space-around", alignItems: "center" },
-  tab: { width: TAB_WIDTH, alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: 6 },
-  label: { fontSize: 10, color: "#7A736A" },
-  voice: { width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center", marginHorizontal: 4, borderWidth: 4, borderColor: "#FAF8F5", zIndex: 10 },
-  micGlow: { ...StyleSheet.absoluteFill, borderRadius: 28 },
-  indicatorTrack: { position: "absolute", bottom: 0, left: 0, right: 0, height: 4, zIndex: 5 },
-  indicator: { position: "absolute", bottom: 0, height: 4, borderRadius: 2, left: 0 },
+  bar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: 8,
+    paddingHorizontal: 8,
+    minHeight: 68,
+  },
+  group: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+  },
+  tabWrap: {
+    flex: 1,
+    alignItems: "center",
+  },
+  tab: {
+    minWidth: 56,
+    minHeight: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 3,
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+  },
+  iconBox: {
+    width: 44,
+    height: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+  },
+  activePill: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 2,
+    right: 2,
+    borderRadius: 14,
+  },
+  label: {
+    fontSize: 11,
+    lineHeight: 14,
+  },
+  centerPlus: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: "center",
+    justifyContent: "center",
+    marginHorizontal: 8,
+  },
 });
-
-import { Alert } from "react-native";
