@@ -265,7 +265,7 @@ Built at **AKI HACKS x Hacktoberfest Hack Day, Kolkata** on 31 October 2026.
 |---|---|---|
 | **Krishnendu Adak (Kisu)** | Team lead, OCR, extraction, integration | [@QuantumSenpai](https://github.com/QuantumSenpai) |
 | **Abirbhab Dasgupta** | Frontend and app flow | [@abirbhab-dasgupta](https://github.com/abirbhab-dasgupta) |
-| **Manish** | Backend data engine | |
+| **Manish** | Backend data engine | [@mxnishhh](https://github.com/mxnishhh) |
 
 ---
 
