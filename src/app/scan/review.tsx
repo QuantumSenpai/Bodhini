@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
@@ -8,14 +8,16 @@ import { BodhiniScreen, FieldInput, PageHeading, PrimaryButton, StatusPill, TopB
 import { useBodhini } from "../../state/AppContext";
 import { services } from "../../composition/services";
 import type { DocumentRecord, ExtractedField } from "../../domain/document/document.types";
-import { colors } from "../../theme/tokens";
 import { t } from "../../i18n/translations";
+import { FadeInUp, PulseDot } from "../../components/motion";
+import { useTheme } from "../../theme/ThemeProvider";
 
 function makeId() { return `doc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`; }
 
 export default function ScanReviewScreen() {
   const router = useRouter();
   const { pendingDocument, setPendingDocument, refreshDocuments, language } = useBodhini();
+  const { colors } = useTheme();
   const [fields, setFields] = useState<ExtractedField[]>(pendingDocument?.analysis.fields ?? []);
   const [saving, setSaving] = useState(false);
 
@@ -57,7 +59,6 @@ export default function ScanReviewScreen() {
         confirmedAt: timestamp,
       };
       await services.documentRepository.save(record);
-      // A list refresh failure must not roll back a successfully persisted record or delete its image.
       await refreshDocuments().catch(() => undefined);
       setPendingDocument(null);
       Alert.alert(t(language, "documentSaved"), t(language, "documentSavedBody"), [
@@ -71,37 +72,55 @@ export default function ScanReviewScreen() {
 
   const speakReview = () => services.voiceService.speak(language === "bn" ? "সংরক্ষণ করার আগে প্রতিটি তথ্য ভালো করে দেখে নিন।" : language === "hi" ? "सहेजने से पहले कृपया हर विवरण ध्यान से जाँचें।" : "Please review every detail carefully before saving.", language).catch(() => Alert.alert(t(language, "voiceUnavailable"), t(language, "ttsUnavailable")));
 
-  return <BodhiniScreen contentStyle={styles.page}>
-    <TopBar title={t(language, "reviewInformation")} onBack={() => router.back()} />
-    <PageHeading title={t(language, "reviewInformation")} subtitle={t(language, "checkDetails")} />
-    <View style={styles.documentPreview}>
-      <Image source={{ uri: pendingDocument.imageUri }} style={styles.previewImage} contentFit="cover" />
-      <View style={{ flex: 1 }}><Text style={styles.previewTitle}>{pendingDocument.analysis.type.replaceAll("_", " ")}</Text><Text style={styles.previewSub}>{pendingDocument.analysis.fields.length} {t(language, "fieldsDetected")}</Text></View>
-      <StatusPill label={pendingDocument.analysis.source} tone="green" />
-    </View>
-    <VoicePromptButton onPress={speakReview} />
-    {fields.map((field) => {
-      const validation = services.documentValidator.validate(field);
-      return <View key={field.id} style={styles.fieldCard}>
-        <FieldInput label={field.label} value={field.value} onChangeText={(value) => updateField(field.id, value)} multiline={field.key === "ADDRESS"} />
-        <View style={styles.fieldMeta}>
-          <StatusPill label={validation.ok ? t(language, "detected") : t(language, "verify")} tone={validation.ok ? "green" : "gold"} />
-          <Text style={styles.confidence}>{Math.round(field.confidence * 100)}% {t(language, "confidence")}</Text>
-        </View>
-      </View>;
-    })}
-    {warnings.length > 0 ? <View style={styles.warning}><AlertCircle color={colors.gold} size={18} /><Text style={styles.warningText}>{warnings.length} {t(language, "attentionNeeded")}</Text></View> : null}
-    {pendingDocument.analysis.warnings.map((warning) => <Text key={warning} style={styles.note}>{warning}</Text>)}
-    <View style={styles.privacyBox}><ShieldCheck color={colors.forest} size={22} /><Text style={styles.privacyText}>{t(language, "onlyConfirmedSaved")}</Text></View>
-    <PrimaryButton title={t(language, "save")} onPress={saveDocument} loading={saving} style={styles.saveButton} />
-  </BodhiniScreen>;
+  return (
+    <BodhiniScreen contentStyle={styles.page}>
+      <TopBar title={t(language, "reviewInformation")} onBack={() => router.back()} />
+      <PageHeading title={t(language, "reviewInformation")} subtitle={t(language, "checkDetails")} />
+      <View style={[styles.documentPreview, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Image source={{ uri: pendingDocument.imageUri }} style={styles.previewImage} contentFit="cover" />
+        <View style={{ flex: 1 }}><Text style={[styles.previewTitle, { color: colors.text }]}>{pendingDocument.analysis.type.replaceAll("_", " ")}</Text><Text style={[styles.previewSub, { color: colors.textMuted }]}>{pendingDocument.analysis.fields.length} {t(language, "fieldsDetected")}</Text></View>
+        <StatusPill label={pendingDocument.analysis.source} tone="green" />
+      </View>
+      <VoicePromptButton onPress={speakReview} />
+      {fields.map((field, index) => {
+        const validation = services.documentValidator.validate(field);
+        const isLowConfidence = field.confidence < 0.7 && field.confidence > 0;
+        return (
+          <FadeInUp key={field.id} index={index} maxAnimated={8}>
+            <View style={[styles.fieldCard, { backgroundColor: colors.card, borderColor: colors.border }, isLowConfidence && styles.fieldCardLowConfidence]}>
+              <FieldInput label={field.label} value={field.value} onChangeText={(value) => updateField(field.id, value)} multiline={field.key === "ADDRESS"} />
+              <View style={styles.fieldMeta}>
+                <StatusPill label={validation.ok ? t(language, "detected") : t(language, "verify")} tone={validation.ok ? "green" : "gold"} />
+                <Text style={[styles.confidence, { color: colors.textMuted }]}>{Math.round(field.confidence * 100)}% {t(language, "confidence")}</Text>
+              </View>
+              {isLowConfidence && <PulseDot color={colors.warning} size={8} style={styles.pulseDot} />}
+            </View>
+          </FadeInUp>
+        );
+      })}
+      {warnings.length > 0 ? <View style={[styles.warning, { backgroundColor: colors.warning + "20" }]}><AlertCircle color={colors.warning} size={18} /><Text style={[styles.warningText, { color: colors.warning }]}>{warnings.length} {t(language, "attentionNeeded")}</Text></View> : null}
+      {pendingDocument.analysis.warnings.map((warning) => <Text key={warning} style={[styles.note, { color: colors.textMuted }]}>{warning}</Text>)}
+      <View style={[styles.privacyBox, { backgroundColor: colors.forestLight }]}><ShieldCheck color={colors.forest} size={22} /><Text style={[styles.privacyText, { color: colors.forest }]}>{t(language, "onlyConfirmedSaved")}</Text></View>
+      <PrimaryButton title={t(language, "save")} onPress={saveDocument} loading={saving} style={styles.saveButton} />
+    </BodhiniScreen>
+  );
 }
 
 const styles = StyleSheet.create({
-  page: { paddingTop: 8 }, documentPreview: { flexDirection: "row", alignItems: "center", gap: 12, padding: 11, borderRadius: 16, backgroundColor: colors.card, borderColor: colors.line, borderWidth: 1, marginBottom: 14 },
-  previewImage: { width: 58, height: 58, borderRadius: 10, backgroundColor: colors.cardStrong }, previewTitle: { fontFamily: "serif", fontSize: 15, fontWeight: "700", color: colors.ink }, previewSub: { marginTop: 4, fontSize: 11, color: colors.muted },
-  fieldCard: { marginTop: 13, padding: 13, borderRadius: 15, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line }, fieldMeta: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: -5 }, confidence: { fontSize: 11, color: colors.muted },
-  warning: { flexDirection: "row", gap: 9, padding: 12, backgroundColor: "#F8E9D4", borderRadius: 14, marginTop: 12 }, warningText: { color: "#79512D", fontSize: 12, lineHeight: 17, flex: 1 },
-  note: { color: colors.muted, fontSize: 11, lineHeight: 16, marginTop: 8 }, privacyBox: { flexDirection: "row", gap: 10, alignItems: "center", padding: 14, backgroundColor: colors.forestLight, borderRadius: 15, marginTop: 15 }, privacyText: { flex: 1, fontSize: 11, color: colors.forest, lineHeight: 16 },
+  page: { paddingTop: 8 },
+  documentPreview: { flexDirection: "row", alignItems: "center", gap: 12, padding: 11, borderRadius: 16, borderWidth: 1, marginBottom: 14 },
+  previewImage: { width: 58, height: 58, borderRadius: 10 },
+  previewTitle: { fontFamily: "serif", fontSize: 15, fontWeight: "700" },
+  previewSub: { marginTop: 4, fontSize: 11 },
+  fieldCard: { marginTop: 13, padding: 13, borderRadius: 15, borderWidth: 1 },
+  fieldCardLowConfidence: { borderWidth: 2 },
+  fieldMeta: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: -5 },
+  confidence: { fontSize: 11 },
+  pulseDot: { marginLeft: 8 },
+  warning: { flexDirection: "row", gap: 9, padding: 12, borderRadius: 14, marginTop: 12 },
+  warningText: { fontSize: 12, lineHeight: 17, flex: 1 },
+  note: { fontSize: 11, lineHeight: 16, marginTop: 8 },
+  privacyBox: { flexDirection: "row", gap: 10, alignItems: "center", padding: 14, borderRadius: 15, marginTop: 15 },
+  privacyText: { flex: 1, fontSize: 11, lineHeight: 16 },
   saveButton: { marginTop: 20 },
 });
