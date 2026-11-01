@@ -1,14 +1,24 @@
-import React from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useCallback, useMemo } from "react";
+import { Alert, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { Camera, Image as ImageIcon, FileText, ScanLine, Clipboard } from "lucide-react-native";
+import {
+  AlertCircle,
+  Camera,
+  CheckSquare,
+  ChevronRight,
+  Clipboard,
+  FileText,
+  Image as ImageIcon,
+  Info,
+  Sparkles,
+} from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
-import { BodhiniScreen, PageHeading, TopBar } from "../../components/ui/BodhiniUI";
+import { ActionCard, BodhiniScreen, PageHeading, PrimaryButton, SecondaryButton } from "../../components/ui/BodhiniUI";
 import { useBodhini } from "../../state/AppContext";
-import { t } from "../../i18n/translations";
-import { FadeInUp } from "../../components/motion";
+import { t, type TranslationKey } from "../../i18n/translations";
+import { FadeInUp, Hint, PressableScale } from "../../components/motion";
 import { useTheme } from "../../theme/ThemeProvider";
-import type { TranslationKey } from "../../i18n/translations";
+import { CONFIDENCE_THRESHOLD } from "../../domain/constants";
 
 interface FormOption {
   id: string;
@@ -22,81 +32,286 @@ interface FormOption {
 
 export default function FormSourceScreen() {
   const router = useRouter();
-  const { language, setPendingFormInput } = useBodhini();
-  const { colors } = useTheme();
+  const { language, setPendingFormInput, filledFields, pendingFormInput, openComingSoon } = useBodhini();
+  const { colors, theme } = useTheme();
 
-  const formOptions: FormOption[] = [
-    { id: "camera", labelKey: "takePhoto", subtitleKey: "paperForm", icon: <Camera size={25} color={colors.onPrimary} />, tint: colors.primary, source: "camera", kind: "PAPER_PHOTO" },
-    { id: "gallery", labelKey: "selectImage", subtitleKey: "fromGallery", icon: <ImageIcon size={25} color={colors.onPrimary} />, tint: colors.moss, source: "gallery", kind: "SCREENSHOT" },
-    { id: "pdf", labelKey: "uploadPdf", subtitleKey: "pdfUnavailable", icon: <FileText size={25} color={colors.onPrimary} />, tint: colors.terracotta, source: null, kind: null },
-    { id: "screenshot", labelKey: "screenshot", subtitleKey: "onlineForms", icon: <ScanLine size={25} color={colors.onPrimary} />, tint: "#514D3F", source: "gallery", kind: "SCREENSHOT" },
-    { id: "sample", labelKey: "sampleForm", subtitleKey: "sampleFormSub", icon: <Clipboard size={25} color={colors.onPrimary} />, tint: colors.blue, source: null, kind: null },
-  ];
+  const counts = useMemo(() => {
+    const matched = filledFields.filter((f) => f.status === "FILLED" && f.confidence >= CONFIDENCE_THRESHOLD).length;
+    const needsReview = filledFields.filter(
+      (f) => (f.status === "FILLED" && f.confidence < CONFIDENCE_THRESHOLD) || f.status === "SKIPPED",
+    ).length;
+    const missing = filledFields.filter((f) => f.status === "NEEDS_USER").length;
+    return { matched, needsReview, missing };
+  }, [filledFields]);
 
-  const chooseImage = async (source: "camera" | "gallery", kind: "PAPER_PHOTO" | "SCREENSHOT") => {
+  const chooseImage = useCallback(async (source: "camera" | "gallery", kind: "PAPER_PHOTO" | "SCREENSHOT") => {
     try {
-      const permission = source === "camera"
-        ? await ImagePicker.requestCameraPermissionsAsync()
-        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const permission =
+        source === "camera"
+          ? await ImagePicker.requestCameraPermissionsAsync()
+          : await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
         Alert.alert(t(language, "permissionRequired"), t(language, "photoAccessText"));
         return;
       }
-      const result = source === "camera"
-        ? await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], quality: 1 })
-        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 1 });
+      const result =
+        source === "camera"
+          ? await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], quality: 1 })
+          : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 1 });
       if (result.canceled || !result.assets[0]?.uri) return;
       setPendingFormInput({ kind, uri: result.assets[0].uri });
       router.push("/forms/analyzing");
     } catch {
       Alert.alert(t(language, "imageSourceUnavailable"), t(language, "galleryFailed"));
     }
-  };
+  }, [language, router, setPendingFormInput]);
 
-  const sampleForm = () => {
+  const startSampleForm = useCallback(() => {
     setPendingFormInput({ kind: "SAMPLE", sampleId: "sample" });
     router.push("/forms/analyzing");
-  };
+  }, [router, setPendingFormInput]);
 
-  const handlePress = (option: typeof formOptions[0]) => {
+  const formOptions: FormOption[] = useMemo(() => [
+    {
+      id: "sample",
+      labelKey: "sampleForm",
+      subtitleKey: "sampleFormSub",
+      icon: <Clipboard size={22} color={colors.onPrimary} />,
+      tint: colors.primary,
+      source: null,
+      kind: null,
+    },
+    {
+      id: "camera",
+      labelKey: "takePhoto",
+      subtitleKey: "paperForm",
+      icon: <Camera size={22} color={colors.onPrimary} />,
+      tint: colors.info,
+      source: "camera",
+      kind: "PAPER_PHOTO",
+    },
+    {
+      id: "gallery",
+      labelKey: "selectImage",
+      subtitleKey: "fromGallery",
+      icon: <ImageIcon size={22} color={colors.onPrimary} />,
+      tint: colors.success,
+      source: "gallery",
+      kind: "SCREENSHOT",
+    },
+    {
+      id: "pdf",
+      labelKey: "uploadPdf",
+      subtitleKey: "pdfUnavailable",
+      icon: <FileText size={22} color={colors.onPrimary} />,
+      tint: colors.pdfBadge,
+      source: null,
+      kind: null,
+    },
+  ], [colors]);
+
+  const handleOptionPress = useCallback((option: FormOption) => {
     if (option.source === "camera" || option.source === "gallery") {
       chooseImage(option.source, option.kind!);
     } else if (option.id === "pdf") {
-      Alert.alert(t(language, "pdfInputUnavailable"), t(language, "pdfInputBody"));
+      openComingSoon(t(language, "uploadPdf"));
     } else if (option.id === "sample") {
-      sampleForm();
+      startSampleForm();
     }
-  };
+  }, [chooseImage, language, openComingSoon, startSampleForm]);
+
+  const activeFileName = pendingFormInput?.kind === "SAMPLE"
+    ? `${t(language, "sampleFormFile")}.pdf`
+    : `${t(language, "scannedFormFile")}.jpg`;
 
   return (
-    <BodhiniScreen contentStyle={styles.page}>
+    <BodhiniScreen inTabs contentStyle={styles.page}>
       <PageHeading title={t(language, "formTitle")} subtitle={t(language, "formIntro")} />
-      {formOptions.map((option, index) => (
-        <FadeInUp key={option.id} index={index} delay={index * 40}>
-          <View style={[styles.chapterCard, { borderColor: option.tint, backgroundColor: colors.card }]}>
-            <View style={[styles.chapterNumber, { backgroundColor: option.tint }]}><Text style={styles.chapterNumberText}>{index + 1}</Text></View>
-            <Pressable onPress={() => handlePress(option)} style={styles.chapterContent} accessibilityRole="button">
-              <View style={[styles.chapterIcon, { backgroundColor: option.tint }]}>{option.icon}</View>
-              <View style={styles.chapterText}>
-                <Text style={[styles.chapterTitle, { color: colors.text }]}>{t(language, option.labelKey)}</Text>
-                <Text style={[styles.chapterSubtitle, { color: colors.textMuted }]}>{t(language, option.subtitleKey)}</Text>
+
+      {filledFields.length > 0 ? (
+        <FadeInUp index={0}>
+          <View style={styles.activeSummaryWrap}>
+            <Hint hint={t(language, "reviewAnswers")} label={activeFileName}>
+              <PressableScale
+                onPress={() => router.push("/forms/review")}
+                accessibilityRole="button"
+                accessibilityLabel={activeFileName}
+                style={[styles.fileCard, { backgroundColor: colors.surface, borderColor: colors.separator }]}
+              >
+                <View style={[styles.pdfIconBox, { backgroundColor: colors.pdfBadge }]}>
+                  <Text style={[styles.pdfIconText, { color: colors.onPrimary }]}>PDF</Text>
+                </View>
+                <View style={styles.fileCardInfo}>
+                  <Text numberOfLines={1} style={[styles.fileName, { color: colors.text, fontSize: theme.typeScale.bodyStrong.fontSize }]}>
+                    {activeFileName}
+                  </Text>
+                  <Text style={[styles.fileSub, { color: colors.secondaryText, fontSize: theme.typeScale.caption.fontSize }]}>
+                    {filledFields.length} {t(language, "fieldsDetected")}
+                  </Text>
+                </View>
+                <ChevronRight size={20} color={colors.secondaryText} />
+              </PressableScale>
+            </Hint>
+
+            <View style={[styles.summaryCard, { backgroundColor: colors.surface, borderColor: colors.separator }]}>
+              <View style={[styles.summaryRow, { borderBottomColor: colors.separator }]}>
+                <CheckSquare size={20} color={colors.success} />
+                <Text style={[styles.summaryLabel, { color: colors.text, fontSize: theme.typeScale.body.fontSize }]}>
+                  {t(language, "matched")}
+                </Text>
+                <Text style={[styles.summaryCount, { color: colors.text, fontSize: theme.typeScale.bodyStrong.fontSize }]}>
+                  {counts.matched}
+                </Text>
               </View>
-            </Pressable>
+              <View style={[styles.summaryRow, { borderBottomColor: colors.separator }]}>
+                <AlertCircle size={20} color={colors.warning} />
+                <Text style={[styles.summaryLabel, { color: colors.text, fontSize: theme.typeScale.body.fontSize }]}>
+                  {t(language, "needsReview")}
+                </Text>
+                <Text style={[styles.summaryCount, { color: colors.text, fontSize: theme.typeScale.bodyStrong.fontSize }]}>
+                  {counts.needsReview}
+                </Text>
+              </View>
+              <View style={[styles.summaryRow, styles.summaryRowLast]}>
+                <Info size={20} color={colors.secondaryText} />
+                <Text style={[styles.summaryLabel, { color: colors.text, fontSize: theme.typeScale.body.fontSize }]}>
+                  {t(language, "missing")}
+                </Text>
+                <Text style={[styles.summaryCount, { color: colors.text, fontSize: theme.typeScale.bodyStrong.fontSize }]}>
+                  {counts.missing}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.summaryButtons}>
+              <PrimaryButton
+                title={t(language, "reviewAnswers")}
+                onPress={() => router.push("/forms/review")}
+                hint={t(language, "reviewAnswers")}
+              />
+              <SecondaryButton
+                title={t(language, "fillWithAi")}
+                onPress={() => openComingSoon(t(language, "fillWithAi"))}
+                hint={t(language, "comingSoonMessage")}
+              />
+            </View>
           </View>
         </FadeInUp>
-      ))}
+      ) : null}
+
+      <View style={styles.optionsList}>
+        {formOptions.map((option, index) => (
+          <FadeInUp key={option.id} index={index + 1}>
+            <ActionCard
+              title={t(language, option.labelKey)}
+              subtitle={t(language, option.subtitleKey)}
+              icon={option.icon}
+              tint={option.tint}
+              onPress={() => handleOptionPress(option)}
+              hint={t(language, option.subtitleKey)}
+            />
+          </FadeInUp>
+        ))}
+      </View>
+
+      {filledFields.length === 0 ? (
+        <FadeInUp index={5}>
+          <Hint hint={t(language, "comingSoonMessage")} label={t(language, "fillWithAi")}>
+            <PressableScale
+              onPress={() => openComingSoon(t(language, "fillWithAi"))}
+              accessibilityRole="button"
+              accessibilityLabel={`${t(language, "fillWithAi")}, ${t(language, "comingSoonBadge")}`}
+              style={[styles.aiCtaButton, { backgroundColor: colors.primary }]}
+            >
+              <Sparkles size={18} color={colors.onPrimary} />
+              <Text style={[styles.aiCtaText, { color: colors.onPrimary, fontSize: theme.typeScale.button.fontSize }]}>
+                {t(language, "fillWithAi")}
+              </Text>
+            </PressableScale>
+          </Hint>
+        </FadeInUp>
+      ) : null}
     </BodhiniScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  page: { paddingTop: 10 },
-  chapterCard: { borderRadius: 20, borderWidth: 1, marginBottom: 12, overflow: "hidden", shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
-  chapterNumber: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", margin: 12 },
-  chapterNumberText: { color: "#FAF8F5", fontFamily: "serif", fontSize: 18, fontWeight: "700" },
-  chapterContent: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 14, gap: 14 },
-  chapterIcon: { width: 52, height: 52, borderRadius: 13, alignItems: "center", justifyContent: "center" },
-  chapterText: { flex: 1, gap: 4 },
-  chapterTitle: { fontFamily: "serif", fontSize: 16, fontWeight: "600" },
-  chapterSubtitle: { fontSize: 12, lineHeight: 17 },
+  page: {
+    paddingTop: 8,
+  },
+  activeSummaryWrap: {
+    gap: 12,
+    marginBottom: 20,
+  },
+  fileCard: {
+    minHeight: 72,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+  },
+  pdfIconBox: {
+    width: 42,
+    height: 48,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pdfIconText: {
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.4,
+  },
+  fileCardInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  fileName: {
+    fontWeight: "600",
+  },
+  fileSub: {},
+  summaryCard: {
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: "hidden",
+  },
+  summaryRow: {
+    minHeight: 54,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  summaryRowLast: {
+    borderBottomWidth: 0,
+  },
+  summaryLabel: {
+    flex: 1,
+    fontWeight: "500",
+  },
+  summaryCount: {
+    fontWeight: "700",
+  },
+  summaryButtons: {
+    gap: 10,
+  },
+  optionsList: {
+    marginTop: 4,
+  },
+  aiCtaButton: {
+    minHeight: 54,
+    borderRadius: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: 8,
+  },
+  aiCtaText: {
+    fontWeight: "600",
+  },
 });
