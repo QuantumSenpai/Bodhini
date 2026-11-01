@@ -274,6 +274,6 @@ Built at **AKI HACKS x Hacktoberfest Hack Day, Kolkata** on 31 October 2026.
 <img src="assets/images/bodhini-mark-green.png" alt="Bodhini mark" height="40" />
 
 **Made by Team NexBytes**
-© 2026 Team NexBytes. All rights reserved.
+© 2026 Team NexBytes. Released under the MIT License.
 
 </div>
