@@ -53,6 +53,8 @@ export interface ThemeColors {
   tooltipText: string;
   pdfBadge: string;
   shadow: string;
+  heroOverlay: string;
+  heroBackdropTint: string;
 }
 
 export const lightColors: ThemeColors = {
@@ -106,6 +108,8 @@ export const lightColors: ThemeColors = {
   tooltipText: "#FFFFFF",
   pdfBadge: "#DC2626",
   shadow: "#000000",
+  heroOverlay: "rgba(246, 244, 241, 0.72)",
+  heroBackdropTint: "#EAE5DC",
 };
 
 export const darkColors: ThemeColors = {
@@ -159,6 +163,8 @@ export const darkColors: ThemeColors = {
   tooltipText: "#F5F5F5",
   pdfBadge: "#EF4444",
   shadow: "#000000",
+  heroOverlay: "rgba(11, 11, 11, 0.55)",
+  heroBackdropTint: "#141D19",
 };
 
 export const spacing = {
@@ -181,6 +187,7 @@ export const radius = {
   xl: 20,
   xxl: 24,
   xxxl: 28,
+  hero: 28,
   pill: 999,
 } as const;
 
