@@ -5,6 +5,7 @@ import type { FilledField, FormInput } from "../domain/form/form.types";
 import { services } from "../composition/services";
 
 export type InteractionMode = "speak" | "type";
+export type ThemeMode = "system" | "light" | "dark";
 
 interface PendingDocumentReview {
   imageUri: string;
@@ -16,6 +17,7 @@ interface AppContextValue {
   onboardingComplete: boolean;
   language: AppLanguage;
   interactionMode: InteractionMode;
+  themeMode: ThemeMode;
   pendingDocument: PendingDocumentReview | null;
   documents: DocumentRecord[];
   documentsLoading: boolean;
@@ -23,6 +25,7 @@ interface AppContextValue {
   filledFields: FilledField[];
   setLanguage: (language: AppLanguage) => Promise<void>;
   setInteractionMode: (mode: InteractionMode) => Promise<void>;
+  setThemeMode: (mode: ThemeMode) => Promise<void>;
   completeOnboarding: () => Promise<void>;
   setPendingDocument: React.Dispatch<React.SetStateAction<PendingDocumentReview | null>>;
   refreshDocuments: () => Promise<void>;
@@ -60,6 +63,7 @@ export function AppProvider({ children }: React.PropsWithChildren) {
   const [onboardingComplete, setOnboardingComplete] = useState(false);
   const [language, setLanguageState] = useState<AppLanguage>("en");
   const [interactionMode, setInteractionModeState] = useState<InteractionMode>("type");
+  const [themeMode, setThemeModeState] = useState<ThemeMode>("system");
   const [pendingDocument, setPendingDocument] = useState<PendingDocumentReview | null>(null);
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [documentsLoading, setDocumentsLoading] = useState(false);
@@ -80,17 +84,18 @@ export function AppProvider({ children }: React.PropsWithChildren) {
     let active = true;
     (async () => {
       try {
-        const [savedLanguage, savedMode, completed] = await Promise.all([
+        const [savedLanguage, savedMode, savedTheme, completed] = await Promise.all([
           readPreference("language"),
           readPreference("interactionMode"),
+          readPreference("themeMode"),
           readPreference("onboardingComplete"),
         ]);
         if (!active) return;
         if (savedLanguage === "en" || savedLanguage === "bn" || savedLanguage === "hi") setLanguageState(savedLanguage);
         if (savedMode === "speak" || savedMode === "type") setInteractionModeState(savedMode);
+        if (savedTheme === "system" || savedTheme === "light" || savedTheme === "dark") setThemeModeState(savedTheme);
         setOnboardingComplete(completed === "true");
       } catch {
-        // The app remains usable with English + typing if preference storage is unavailable.
       } finally {
         if (active) setReady(true);
       }
@@ -112,17 +117,22 @@ export function AppProvider({ children }: React.PropsWithChildren) {
     await writePreference("interactionMode", value);
   }, []);
 
+  const setThemeMode = useCallback(async (value: ThemeMode) => {
+    setThemeModeState(value);
+    await writePreference("themeMode", value);
+  }, []);
+
   const completeOnboarding = useCallback(async () => {
     setOnboardingComplete(true);
     await writePreference("onboardingComplete", "true");
   }, []);
 
   const value = useMemo<AppContextValue>(() => ({
-    ready, onboardingComplete, language, interactionMode, pendingDocument, documents, documentsLoading,
-    pendingFormInput, filledFields, setLanguage, setInteractionMode, completeOnboarding,
+    ready, onboardingComplete, language, interactionMode, themeMode, pendingDocument, documents, documentsLoading,
+    pendingFormInput, filledFields, setLanguage, setInteractionMode, setThemeMode, completeOnboarding,
     setPendingDocument, refreshDocuments, setPendingFormInput, setFilledFields,
-  }), [ready, onboardingComplete, language, interactionMode, pendingDocument, documents, documentsLoading,
-    pendingFormInput, filledFields, setLanguage, setInteractionMode, completeOnboarding, refreshDocuments]);
+  }), [ready, onboardingComplete, language, interactionMode, themeMode, pendingDocument, documents, documentsLoading,
+    pendingFormInput, filledFields, setLanguage, setInteractionMode, setThemeMode, completeOnboarding, refreshDocuments]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
