@@ -1,70 +1,165 @@
-import { Platform, StyleSheet, type ViewStyle, type TextStyle, type ImageStyle } from "react-native";
+import { Platform, StyleSheet } from "react-native";
 
 export type ColorMode = "light" | "dark";
 
-export const lightColors = {
-  background: "#FAF8F5",
+export interface ThemeColors {
+  primary: string;
+  onPrimary: string;
+  surface: string;
+  surfaceAlt: string;
+  background: string;
+  separator: string;
+  border: string;
+  text: string;
+  secondaryText: string;
+  textMuted: string;
+  success: string;
+  successLight: string;
+  warning: string;
+  warningLight: string;
+  info: string;
+  infoLight: string;
+  danger: string;
+  dangerLight: string;
+  card: string;
+  cardStrong: string;
+  forest: string;
+  forestLight: string;
+  moss: string;
+  gold: string;
+  terracotta: string;
+  blue: string;
+  accent: string;
+  white: string;
+  ink: string;
+  muted: string;
+  line: string;
+  paper: string;
+  overlay: string;
+  backdrop: string;
+  cardAadhaar: string;
+  cardPan: string;
+  cardBirth: string;
+  cardRation: string;
+  cardMarksheet: string;
+  cardDomicile: string;
+  cardStackBack: string;
+  cardStackMid: string;
+  cameraBg: string;
+  cameraOverlay: string;
+  cameraControl: string;
+  cameraText: string;
+  tooltipBg: string;
+  tooltipText: string;
+  pdfBadge: string;
+  shadow: string;
+}
+
+export const lightColors: ThemeColors = {
+  primary: "#1E6148",
+  onPrimary: "#FFFFFF",
   surface: "#FFFFFF",
-  surfaceAlt: "#F4F1EC",
+  surfaceAlt: "#EFECE6",
+  background: "#F6F4F1",
+  separator: "#E4DED2",
+  border: "#E4DED2",
+  text: "#111111",
+  secondaryText: "#6B7280",
+  textMuted: "#6B7280",
+  success: "#2E7D32",
+  successLight: "#E8F5E9",
+  warning: "#F59E08",
+  warningLight: "#FEF7E6",
+  info: "#2563EB",
+  infoLight: "#EFF6FF",
+  danger: "#DC2626",
+  dangerLight: "#FEECEC",
   card: "#FFFFFF",
-  border: "#E8E2DB",
-  text: "#1A1816",
-  textMuted: "#7A736A",
-  primary: "#1B3A2F",
-  onPrimary: "#FAF8F5",
-  accent: "#D4A01E",
-  success: "#2E7D3A",
-  warning: "#B8741E",
-  danger: "#A63D32",
-  skyTop: "#A8D0E6",
-  skyBottom: "#D6EAF5",
-  overlay: "rgba(26, 24, 22, 0.35)",
-  forest: "#1B3A2F",
-  forestLight: "#E8F0E9",
-  moss: "#6B8A6A",
-  gold: "#C4943A",
-  terracotta: "#A66B4D",
-  blue: "#4A6B8A",
+  cardStrong: "#EFECE6",
+  forest: "#1E6148",
+  forestLight: "#E6F2ED",
+  moss: "#2E7D32",
+  gold: "#F59E08",
+  terracotta: "#C85A32",
+  blue: "#2563EB",
+  accent: "#1E6148",
   white: "#FFFFFF",
-  ink: "#1A1816",
-  muted: "#7A736A",
-  line: "#E8E2DB",
-  paper: "#FEFDFB",
-  cardStrong: "#F4F1EC",
-} as const;
+  ink: "#111111",
+  muted: "#6B7280",
+  line: "#E4DED2",
+  paper: "#FFFFFF",
+  overlay: "rgba(17, 17, 17, 0.45)",
+  backdrop: "rgba(17, 17, 17, 0.48)",
+  cardAadhaar: "#1E6148",
+  cardPan: "#2563EB",
+  cardBirth: "#6D4C3D",
+  cardRation: "#0F766E",
+  cardMarksheet: "#4338CA",
+  cardDomicile: "#6D28D9",
+  cardStackBack: "#D96B38",
+  cardStackMid: "#2563EB",
+  cameraBg: "#0B0B0B",
+  cameraOverlay: "rgba(11, 11, 11, 0.62)",
+  cameraControl: "rgba(255, 255, 255, 0.16)",
+  cameraText: "#FFFFFF",
+  tooltipBg: "#111111",
+  tooltipText: "#FFFFFF",
+  pdfBadge: "#DC2626",
+  shadow: "#000000",
+};
 
-export const darkColors = {
-  background: "#161817",
-  surface: "#1E211F",
-  surfaceAlt: "#252926",
-  card: "#1E211F",
-  border: "#333834",
-  text: "#F0EDE8",
-  textMuted: "#9A9388",
-  primary: "#7FD8A8",
-  onPrimary: "#0D1A13",
-  accent: "#E8C54A",
-  success: "#6FD17A",
-  warning: "#E8B84A",
-  danger: "#E87D74",
-  skyTop: "#0F1A22",
-  skyBottom: "#1A2A35",
-  overlay: "rgba(240, 237, 232, 0.25)",
-  forest: "#7FD8A8",
-  forestLight: "#142A1E",
-  moss: "#8FD498",
-  gold: "#E8C54A",
-  terracotta: "#D49A7D",
-  blue: "#7DA8D4",
-  white: "#F0EDE8",
-  ink: "#F0EDE8",
-  muted: "#9A9388",
-  line: "#333834",
-  paper: "#232724",
-  cardStrong: "#252926",
-} as const;
-
-export type ThemeColors = typeof lightColors;
+export const darkColors: ThemeColors = {
+  primary: "#237356",
+  onPrimary: "#FFFFFF",
+  surface: "#161616",
+  surfaceAlt: "#222222",
+  background: "#0B0B0B",
+  separator: "#262626",
+  border: "#262626",
+  text: "#F5F5F5",
+  secondaryText: "#A3A3A3",
+  textMuted: "#A3A3A3",
+  success: "#4ADE80",
+  successLight: "#142E1B",
+  warning: "#FBBF24",
+  warningLight: "#2E2208",
+  info: "#60A5FA",
+  infoLight: "#132238",
+  danger: "#F87171",
+  dangerLight: "#2E1414",
+  card: "#161616",
+  cardStrong: "#222222",
+  forest: "#38B282",
+  forestLight: "#142B22",
+  moss: "#38B282",
+  gold: "#FBBF24",
+  terracotta: "#E07A54",
+  blue: "#3B82F6",
+  accent: "#38B282",
+  white: "#FFFFFF",
+  ink: "#F5F5F5",
+  muted: "#A3A3A3",
+  line: "#262626",
+  paper: "#1C1C1C",
+  overlay: "rgba(0, 0, 0, 0.65)",
+  backdrop: "rgba(0, 0, 0, 0.7)",
+  cardAadhaar: "#1E6148",
+  cardPan: "#2563EB",
+  cardBirth: "#6D4C3D",
+  cardRation: "#0F766E",
+  cardMarksheet: "#4338CA",
+  cardDomicile: "#6D28D9",
+  cardStackBack: "#D96B38",
+  cardStackMid: "#2563EB",
+  cameraBg: "#0B0B0B",
+  cameraOverlay: "rgba(11, 11, 11, 0.68)",
+  cameraControl: "rgba(255, 255, 255, 0.16)",
+  cameraText: "#FFFFFF",
+  tooltipBg: "#262626",
+  tooltipText: "#F5F5F5",
+  pdfBadge: "#EF4444",
+  shadow: "#000000",
+};
 
 export const spacing = {
   0: 0,
@@ -80,7 +175,7 @@ export const spacing = {
 } as const;
 
 export const radius = {
-  sm: 8,
+  sm: 12,
   md: 12,
   lg: 16,
   xl: 20,
@@ -89,139 +184,153 @@ export const radius = {
   pill: 999,
 } as const;
 
-export const typeScale = {
-  display: { fontSize: 40, lineHeight: 48, fontWeight: "700" as const, fontFamily: "serif" as const, letterSpacing: -1.5 },
-  h1: { fontSize: 32, lineHeight: 40, fontWeight: "700" as const, fontFamily: "serif" as const, letterSpacing: -1 },
-  h2: { fontSize: 24, lineHeight: 32, fontWeight: "600" as const, fontFamily: "serif" as const, letterSpacing: -0.5 },
-  h3: { fontSize: 20, lineHeight: 28, fontWeight: "600" as const, fontFamily: "serif" as const },
-  body: { fontSize: 15, lineHeight: 24, fontWeight: "400" as const },
-  bodyStrong: { fontSize: 15, lineHeight: 24, fontWeight: "600" as const },
-  caption: { fontSize: 12, lineHeight: 18, fontWeight: "400" as const },
-  label: { fontSize: 11, lineHeight: 16, fontWeight: "600" as const, letterSpacing: 0.8, textTransform: "uppercase" as const },
-  button: { fontSize: 16, lineHeight: 22, fontWeight: "600" as const },
-} as const;
+export function buildTypeScale(scale = 1) {
+  const s = (size: number) => Math.round(size * scale);
+  return {
+    largeTitle: { fontSize: s(34), lineHeight: s(40), fontWeight: "700" as const, letterSpacing: -0.6 },
+    title: { fontSize: s(28), lineHeight: s(34), fontWeight: "600" as const, letterSpacing: -0.4 },
+    display: { fontSize: s(34), lineHeight: s(40), fontWeight: "700" as const, letterSpacing: -0.6 },
+    h1: { fontSize: s(28), lineHeight: s(34), fontWeight: "600" as const, letterSpacing: -0.4 },
+    h2: { fontSize: s(22), lineHeight: s(28), fontWeight: "600" as const, letterSpacing: -0.2 },
+    h3: { fontSize: s(19), lineHeight: s(25), fontWeight: "600" as const },
+    body: { fontSize: s(17), lineHeight: s(24), fontWeight: "400" as const },
+    bodyStrong: { fontSize: s(17), lineHeight: s(24), fontWeight: "600" as const },
+    caption: { fontSize: s(13), lineHeight: s(18), fontWeight: "400" as const },
+    captionStrong: { fontSize: s(13), lineHeight: s(18), fontWeight: "600" as const },
+    label: { fontSize: s(12), lineHeight: s(16), fontWeight: "500" as const },
+    button: { fontSize: s(17), lineHeight: s(22), fontWeight: "600" as const },
+  };
+}
+
+export const typeScale = buildTypeScale(1);
+
+const lightShadowPreset = Platform.select({
+  android: { elevation: 1 },
+  default: {
+    shadowColor: "#000000",
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
+  },
+}) ?? { elevation: 1 };
 
 export const shadows = {
   none: {},
-  xs: { shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
-  sm: { shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
-  md: { shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 3 },
-  lg: { shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 5 },
-  xl: { shadowColor: "#000", shadowOpacity: 0.12, shadowRadius: 24, shadowOffset: { width: 0, height: 12 }, elevation: 8 },
+  card: lightShadowPreset,
+  xs: lightShadowPreset,
+  sm: lightShadowPreset,
+  md: lightShadowPreset,
+  lg: lightShadowPreset,
+  xl: lightShadowPreset,
 } as const;
 
-export function makeTheme(colors: ThemeColors) {
+export function makeTheme(colors: ThemeColors, fontScale = 1) {
+  const scaledTypes = buildTypeScale(fontScale);
   const style = StyleSheet.create({
     safe: { flex: 1, backgroundColor: colors.background },
     flex: { flex: 1 },
-    content: { paddingHorizontal: spacing[4], paddingTop: spacing[3], paddingBottom: spacing[6], flexGrow: 1 },
-    topBar: { minHeight: 48, flexDirection: "row", alignItems: "center", marginBottom: spacing[4] },
-    backButton: { width: 34, height: 40, justifyContent: "center", alignItems: "flex-start" },
-    topBarTitle: { flex: 1, color: colors.text, fontFamily: "serif", fontSize: typeScale.h2.fontSize, textAlign: "center" },
-    topBarRight: { width: 34, alignItems: "flex-end" },
-    heading: { marginTop: spacing[1], marginBottom: spacing[4], gap: spacing[2] },
+    content: { paddingHorizontal: spacing[4], paddingTop: spacing[3], paddingBottom: spacing[8], flexGrow: 1 },
+    topBar: { minHeight: 52, flexDirection: "row", alignItems: "center", marginBottom: spacing[3] },
+    backButton: { minWidth: 48, minHeight: 48, justifyContent: "center", alignItems: "flex-start" },
+    topBarTitle: { flex: 1, color: colors.text, ...scaledTypes.bodyStrong, textAlign: "center" },
+    topBarRight: { minWidth: 48, minHeight: 48, alignItems: "flex-end", justifyContent: "center" },
+    heading: { marginTop: spacing[1], marginBottom: spacing[4], gap: spacing[1] },
     center: { alignItems: "center" },
-    headingTitle: { color: colors.text, ...typeScale.h1 },
-    headingSubtitle: { color: colors.textMuted, ...typeScale.body },
+    headingTitle: { color: colors.text, ...scaledTypes.title },
+    headingSubtitle: { color: colors.secondaryText, ...scaledTypes.caption },
     textCenter: { textAlign: "center" },
     primaryButton: {
-      minHeight: 56,
-      borderRadius: radius.pill,
+      minHeight: 54,
+      borderRadius: radius.lg,
       paddingHorizontal: spacing[6],
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
       gap: spacing[2],
       backgroundColor: colors.primary,
-      ...shadows.sm,
     },
-    primaryButtonPressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
-    primaryButtonText: { color: colors.onPrimary, ...typeScale.button },
+    primaryButtonPressed: { opacity: 0.9 },
+    primaryButtonText: { color: colors.onPrimary, ...scaledTypes.button },
     secondaryButton: {
       minHeight: 52,
       borderRadius: radius.lg,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: colors.surfaceAlt,
-      borderWidth: 1,
-      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.separator,
       paddingHorizontal: spacing[5],
     },
-    secondaryButtonText: { color: colors.text, fontFamily: "serif", ...typeScale.button },
+    secondaryButtonText: { color: colors.text, ...scaledTypes.button },
     actionCard: {
-      minHeight: 88,
+      minHeight: 76,
       flexDirection: "row",
       alignItems: "center",
-      padding: spacing[3],
-      borderRadius: radius.xl,
-      backgroundColor: colors.card,
-      borderWidth: 1,
-      borderColor: colors.border,
-      marginBottom: spacing[2],
+      padding: spacing[4],
+      borderRadius: radius.lg,
+      backgroundColor: colors.surface,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.separator,
+      marginBottom: spacing[3],
       gap: spacing[3],
-      ...shadows.xs,
+      ...shadows.card,
     },
-    cardPressed: { opacity: 0.8 },
-    actionIcon: { width: 56, height: 56, borderRadius: radius.md, alignItems: "center", justifyContent: "center" },
+    cardPressed: { opacity: 0.9 },
+    actionIcon: { width: 48, height: 48, borderRadius: radius.md, alignItems: "center", justifyContent: "center" },
     actionTextWrap: { flex: 1, gap: spacing[1] },
-    actionTitle: { color: colors.text, fontFamily: "serif", fontWeight: "600", fontSize: typeScale.bodyStrong.fontSize },
-    actionSubtitle: { color: colors.textMuted, ...typeScale.caption },
+    actionTitle: { color: colors.text, ...scaledTypes.bodyStrong },
+    actionSubtitle: { color: colors.secondaryText, ...scaledTypes.caption },
     fieldWrap: { marginBottom: spacing[3], gap: spacing[1] },
-    fieldLabel: { color: colors.textMuted, ...typeScale.label },
+    fieldLabel: { color: colors.secondaryText, ...scaledTypes.label },
     fieldInputRow: {
       minHeight: 52,
       borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: colors.border,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.separator,
       backgroundColor: colors.surface,
       paddingHorizontal: spacing[3],
       flexDirection: "row",
       alignItems: "center",
     },
-    fieldInput: { flex: 1, color: colors.text, ...typeScale.body, paddingVertical: spacing[2] },
-    multiline: { minHeight: 96, alignItems: "flex-start" },
-    fieldInputMultiline: { minHeight: 76 },
-    statusPill: { borderRadius: radius.pill, paddingHorizontal: spacing[2], paddingVertical: spacing[0], alignSelf: "flex-start" },
-    statusText: { fontSize: 10, fontWeight: "700" },
-    sectionLabel: { color: colors.textMuted, ...typeScale.label, marginTop: spacing[2], marginBottom: spacing[2] },
+    fieldInput: { flex: 1, color: colors.text, ...scaledTypes.body, paddingVertical: spacing[2] },
+    multiline: { minHeight: 88, alignItems: "flex-start" },
+    fieldInputMultiline: { minHeight: 72 },
+    statusPill: { borderRadius: radius.pill, paddingHorizontal: spacing[2], paddingVertical: spacing[1], alignSelf: "flex-start" },
+    statusText: { ...scaledTypes.label, fontWeight: "600" },
+    sectionLabel: { color: colors.secondaryText, ...scaledTypes.label, marginTop: spacing[2], marginBottom: spacing[2] },
     voiceButton: {
+      minHeight: 48,
       alignSelf: "flex-start",
       flexDirection: "row",
-      gap: spacing[1],
+      gap: spacing[2],
       alignItems: "center",
       paddingVertical: spacing[2],
-      paddingHorizontal: spacing[3],
+      paddingHorizontal: spacing[4],
       borderRadius: radius.pill,
       backgroundColor: colors.forestLight,
     },
-    voiceButtonText: { color: colors.forest, ...typeScale.label },
+    voiceButtonText: { color: colors.forest, ...scaledTypes.captionStrong },
     emptyState: {
       alignItems: "center",
       justifyContent: "center",
-      paddingVertical: spacing[10],
+      paddingVertical: spacing[8],
       paddingHorizontal: spacing[6],
-      backgroundColor: colors.card,
-      borderRadius: radius.xxl,
-      borderWidth: 1,
-      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      borderRadius: radius.xl,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.separator,
     },
-    emptyIcon: { width: 72, height: 72, borderRadius: radius.xl, backgroundColor: colors.forestLight, alignItems: "center", justifyContent: "center", marginBottom: spacing[4] },
-    emptyTitle: { color: colors.text, fontFamily: "serif", fontSize: typeScale.h3.fontSize, fontWeight: "600", textAlign: "center" },
-    emptySubtitle: { color: colors.textMuted, ...typeScale.caption, textAlign: "center", marginTop: spacing[2] },
-    divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing[3] },
+    emptyIcon: { width: 64, height: 64, borderRadius: radius.lg, backgroundColor: colors.forestLight, alignItems: "center", justifyContent: "center", marginBottom: spacing[4] },
+    emptyTitle: { color: colors.text, ...scaledTypes.h3, textAlign: "center" },
+    emptySubtitle: { color: colors.secondaryText, ...scaledTypes.caption, textAlign: "center", marginTop: spacing[2] },
+    divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginVertical: spacing[3] },
   });
 
-  return { colors, spacing, radius, typeScale, shadows, style };
+  return { colors, spacing, radius, typeScale: scaledTypes, shadows, style };
 }
 
 export const lightTheme = makeTheme(lightColors);
-export const darkTheme = makeTheme(darkColors as unknown as ThemeColors);
+export const darkTheme = makeTheme(darkColors);
 
-export type Theme = {
-  colors: ThemeColors;
-  spacing: typeof spacing;
-  radius: typeof radius;
-  typeScale: typeof typeScale;
-  shadows: typeof shadows;
-  style: ReturnType<typeof StyleSheet.create>;
-};
+export type Theme = ReturnType<typeof makeTheme>;

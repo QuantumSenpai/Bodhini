@@ -1,11 +1,22 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { AccessibilityInfo } from "react-native";
 import { openDatabaseAsync, type SQLiteDatabase } from "expo-sqlite";
+import * as FileSystem from "expo-file-system/legacy";
 import type { AppLanguage, DocumentAnalysis, DocumentRecord } from "../domain/document/document.types";
 import type { FilledField, FormInput } from "../domain/form/form.types";
 import { services } from "../composition/services";
 
 export type InteractionMode = "speak" | "type";
 export type ThemeMode = "system" | "light" | "dark";
+export type TextSize = 1 | 1.15 | 1.3;
+
+export interface HintBubbleInfo {
+  text: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
 interface PendingDocumentReview {
   imageUri: string;
@@ -18,19 +29,36 @@ interface AppContextValue {
   language: AppLanguage;
   interactionMode: InteractionMode;
   themeMode: ThemeMode;
+  profileName: string;
+  textSize: TextSize;
+  reduceMotion: boolean;
+  userReduceMotion: boolean;
   pendingDocument: PendingDocumentReview | null;
   documents: DocumentRecord[];
   documentsLoading: boolean;
   pendingFormInput: FormInput | null;
   filledFields: FilledField[];
+  comingSoonFeature: string | null;
+  toastMessage: string | null;
+  activeHint: HintBubbleInfo | null;
   setLanguage: (language: AppLanguage) => Promise<void>;
   setInteractionMode: (mode: InteractionMode) => Promise<void>;
   setThemeMode: (mode: ThemeMode) => Promise<void>;
+  setProfileName: (name: string) => Promise<void>;
+  setTextSize: (size: TextSize) => Promise<void>;
+  setReduceMotion: (enabled: boolean) => Promise<void>;
   completeOnboarding: () => Promise<void>;
+  clearAllData: () => Promise<void>;
   setPendingDocument: React.Dispatch<React.SetStateAction<PendingDocumentReview | null>>;
   refreshDocuments: () => Promise<void>;
   setPendingFormInput: React.Dispatch<React.SetStateAction<FormInput | null>>;
   setFilledFields: React.Dispatch<React.SetStateAction<FilledField[]>>;
+  openComingSoon: (feature?: string) => void;
+  closeComingSoon: () => void;
+  showToast: (message: string) => void;
+  hideToast: () => void;
+  showHint: (info: HintBubbleInfo) => void;
+  hideHint: () => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -64,11 +92,20 @@ export function AppProvider({ children }: React.PropsWithChildren) {
   const [language, setLanguageState] = useState<AppLanguage>("en");
   const [interactionMode, setInteractionModeState] = useState<InteractionMode>("type");
   const [themeMode, setThemeModeState] = useState<ThemeMode>("system");
+  const [profileName, setProfileNameState] = useState("");
+  const [textSize, setTextSizeState] = useState<TextSize>(1);
+  const [userReduceMotion, setUserReduceMotionState] = useState(false);
+  const [systemReduceMotion, setSystemReduceMotion] = useState(false);
   const [pendingDocument, setPendingDocument] = useState<PendingDocumentReview | null>(null);
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [pendingFormInput, setPendingFormInput] = useState<FormInput | null>(null);
   const [filledFields, setFilledFields] = useState<FilledField[]>([]);
+  const [comingSoonFeature, setComingSoonFeature] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [activeHint, setActiveHint] = useState<HintBubbleInfo | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const refreshDocuments = useCallback(async () => {
     setDocumentsLoading(true);
@@ -81,26 +118,50 @@ export function AppProvider({ children }: React.PropsWithChildren) {
   }, []);
 
   useEffect(() => {
+    let mounted = true;
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then((enabled) => {
+        if (mounted) setSystemReduceMotion(Boolean(enabled));
+      })
+      .catch(() => undefined);
+    const sub = AccessibilityInfo.addEventListener("reduceMotionChanged", (enabled) => {
+      if (mounted) setSystemReduceMotion(Boolean(enabled));
+    });
+    return () => {
+      mounted = false;
+      sub.remove();
+    };
+  }, []);
+
+  useEffect(() => {
     let active = true;
     (async () => {
       try {
-        const [savedLanguage, savedMode, savedTheme, completed] = await Promise.all([
+        const [savedLanguage, savedMode, savedTheme, completed, savedName, savedSize, savedMotion] = await Promise.all([
           readPreference("language"),
           readPreference("interactionMode"),
           readPreference("themeMode"),
           readPreference("onboardingComplete"),
+          readPreference("profileName"),
+          readPreference("textSize"),
+          readPreference("reduceMotion"),
         ]);
         if (!active) return;
         if (savedLanguage === "en" || savedLanguage === "bn" || savedLanguage === "hi") setLanguageState(savedLanguage);
         if (savedMode === "speak" || savedMode === "type") setInteractionModeState(savedMode);
         if (savedTheme === "system" || savedTheme === "light" || savedTheme === "dark") setThemeModeState(savedTheme);
+        if (typeof savedName === "string") setProfileNameState(savedName);
+        if (savedSize === "1" || savedSize === "1.15" || savedSize === "1.3") setTextSizeState(Number(savedSize) as TextSize);
+        if (savedMotion === "true" || savedMotion === "false") setUserReduceMotionState(savedMotion === "true");
         setOnboardingComplete(completed === "true");
       } catch {
       } finally {
         if (active) setReady(true);
       }
     })();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -122,17 +183,162 @@ export function AppProvider({ children }: React.PropsWithChildren) {
     await writePreference("themeMode", value);
   }, []);
 
+  const setProfileName = useCallback(async (value: string) => {
+    const trimmed = value.trim();
+    setProfileNameState(trimmed);
+    await writePreference("profileName", trimmed);
+  }, []);
+
+  const setTextSize = useCallback(async (value: TextSize) => {
+    setTextSizeState(value);
+    await writePreference("textSize", String(value));
+  }, []);
+
+  const setReduceMotion = useCallback(async (value: boolean) => {
+    setUserReduceMotionState(value);
+    await writePreference("reduceMotion", value ? "true" : "false");
+  }, []);
+
   const completeOnboarding = useCallback(async () => {
     setOnboardingComplete(true);
     await writePreference("onboardingComplete", "true");
   }, []);
 
+  const clearAllData = useCallback(async () => {
+    const existing = await services.documentRepository.getAll();
+    for (const doc of existing) {
+      await services.documentRepository.delete(doc.id);
+      if (doc.imageUri) {
+        await FileSystem.deleteAsync(doc.imageUri, { idempotent: true }).catch(() => undefined);
+      }
+    }
+    setDocuments([]);
+    setPendingDocument(null);
+    setPendingFormInput(null);
+    setFilledFields([]);
+  }, []);
+
+  const openComingSoon = useCallback((feature?: string) => {
+    setComingSoonFeature(feature ?? "");
+  }, []);
+
+  const closeComingSoon = useCallback(() => {
+    setComingSoonFeature(null);
+  }, []);
+
+  const hideToast = useCallback(() => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = null;
+    }
+    setToastMessage(null);
+  }, []);
+
+  const showToast = useCallback((message: string) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToastMessage(message);
+    toastTimerRef.current = setTimeout(() => {
+      setToastMessage(null);
+      toastTimerRef.current = null;
+    }, 2200);
+  }, []);
+
+  const hideHint = useCallback(() => {
+    if (hintTimerRef.current) {
+      clearTimeout(hintTimerRef.current);
+      hintTimerRef.current = null;
+    }
+    setActiveHint(null);
+  }, []);
+
+  const showHint = useCallback((info: HintBubbleInfo) => {
+    if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+    setActiveHint(info);
+    hintTimerRef.current = setTimeout(() => {
+      setActiveHint(null);
+      hintTimerRef.current = null;
+    }, 2500);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+    };
+  }, []);
+
+  const reduceMotion = userReduceMotion || systemReduceMotion;
+
   const value = useMemo<AppContextValue>(() => ({
-    ready, onboardingComplete, language, interactionMode, themeMode, pendingDocument, documents, documentsLoading,
-    pendingFormInput, filledFields, setLanguage, setInteractionMode, setThemeMode, completeOnboarding,
-    setPendingDocument, refreshDocuments, setPendingFormInput, setFilledFields,
-  }), [ready, onboardingComplete, language, interactionMode, themeMode, pendingDocument, documents, documentsLoading,
-    pendingFormInput, filledFields, setLanguage, setInteractionMode, setThemeMode, completeOnboarding, refreshDocuments]);
+    ready,
+    onboardingComplete,
+    language,
+    interactionMode,
+    themeMode,
+    profileName,
+    textSize,
+    reduceMotion,
+    userReduceMotion,
+    pendingDocument,
+    documents,
+    documentsLoading,
+    pendingFormInput,
+    filledFields,
+    comingSoonFeature,
+    toastMessage,
+    activeHint,
+    setLanguage,
+    setInteractionMode,
+    setThemeMode,
+    setProfileName,
+    setTextSize,
+    setReduceMotion,
+    completeOnboarding,
+    clearAllData,
+    setPendingDocument,
+    refreshDocuments,
+    setPendingFormInput,
+    setFilledFields,
+    openComingSoon,
+    closeComingSoon,
+    showToast,
+    hideToast,
+    showHint,
+    hideHint,
+  }), [
+    ready,
+    onboardingComplete,
+    language,
+    interactionMode,
+    themeMode,
+    profileName,
+    textSize,
+    reduceMotion,
+    userReduceMotion,
+    pendingDocument,
+    documents,
+    documentsLoading,
+    pendingFormInput,
+    filledFields,
+    comingSoonFeature,
+    toastMessage,
+    activeHint,
+    setLanguage,
+    setInteractionMode,
+    setThemeMode,
+    setProfileName,
+    setTextSize,
+    setReduceMotion,
+    completeOnboarding,
+    clearAllData,
+    refreshDocuments,
+    openComingSoon,
+    closeComingSoon,
+    showToast,
+    hideToast,
+    showHint,
+    hideHint,
+  ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

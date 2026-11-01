@@ -1,95 +1,392 @@
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { Flower2, ArrowRight, Sun, Moon, Monitor } from "lucide-react-native";
-import { Image } from "expo-image";
-import { BodhiniScreen, PrimaryButton } from "../components/ui/BodhiniUI";
+import type { AppLanguage } from "../domain/document/document.types";
+import { BodhiniLogoMark, BodhiniScreen, PrimaryButton } from "../components/ui/BodhiniUI";
 import { useBodhini } from "../state/AppContext";
 import { t } from "../i18n/translations";
 import { useTheme } from "../theme/ThemeProvider";
-import { Cloud, FloatingCard, StaggeredReveal, Star } from "../components/motion";
-import { Pressable } from "react-native";
+import { FadeInUp, Hint, PressableScale, PulseDot } from "../components/motion";
+
+const languagePills: { code: AppLanguage; label: string }[] = [
+  { code: "en", label: "English" },
+  { code: "bn", label: "বাংলা" },
+  { code: "hi", label: "हिंदी" },
+];
 
 export default function WelcomeScreen() {
   const router = useRouter();
-  const { ready, onboardingComplete, language } = useBodhini();
-  const { isDark, setMode, colors } = useTheme();
+  const { ready, onboardingComplete, language, setLanguage, completeOnboarding } = useBodhini();
+  const { colors, theme } = useTheme();
+  const [slideIndex, setSlideIndex] = useState(0);
 
   useEffect(() => {
-    if (ready && onboardingComplete) router.replace("/(tabs)");
-  }, [ready, onboardingComplete, router]);
+    if (ready && onboardingComplete) {
+      router.replace("/(tabs)");
+    }
+  }, [onboardingComplete, ready, router]);
+
+  const handleSkip = useCallback(async () => {
+    await completeOnboarding().catch(() => undefined);
+    router.replace("/(tabs)");
+  }, [completeOnboarding, router]);
+
+  const handleGetStarted = useCallback(() => {
+    if (slideIndex < 2) {
+      setSlideIndex((prev) => prev + 1);
+      return;
+    }
+    router.push("/(onboarding)/language");
+  }, [router, slideIndex]);
+
+  if (!ready || onboardingComplete) {
+    return (
+      <BodhiniScreen scroll={false} contentStyle={styles.splashContainer}>
+        <View style={styles.splashCenter}>
+          <BodhiniLogoMark size={60} />
+          <Text style={[styles.splashBrand, { color: colors.text, fontSize: theme.typeScale.largeTitle.fontSize }]}>
+            {t(language, "brandName")}
+          </Text>
+          <Text style={[styles.splashSub, { color: colors.secondaryText, fontSize: theme.typeScale.caption.fontSize }]}>
+            {t(language, "brandCompanion")}
+          </Text>
+          <PulseDot color={colors.primary} size={8} style={styles.splashPulse} />
+        </View>
+      </BodhiniScreen>
+    );
+  }
+
+  const slides = [
+    { title: t(language, "tagline"), body: t(language, "description") },
+    { title: t(language, "slide2Title"), body: t(language, "slide2Desc") },
+    { title: t(language, "slide3Title"), body: t(language, "slide3Desc") },
+  ];
+  const currentSlide = slides[slideIndex] ?? slides[0];
 
   return (
-    <BodhiniScreen scroll={false} contentStyle={styles.page}>
-      <View style={styles.top}>
-        <View style={styles.lotus}><Flower2 size={52} color={colors.accent} strokeWidth={1.5} /></View>
-        <StaggeredReveal staggerDelay={80} duration={240}>
-          <Text style={[styles.brand, { color: colors.text }]}>Bodhini</Text>
-          <Text style={[styles.tagline, { color: colors.text }]}>{t(language, "tagline")}</Text>
-          <Text style={[styles.description, { color: colors.text }]}>{t(language, "description")}</Text>
-        </StaggeredReveal>
-      </View>
-      <View style={styles.heroWrap}>
-        <View style={styles.sky}>
-          {isDark ? (
-            <>
-              <Star size={3} twinkleDuration={2500} delay={0} style={{ top: 40, left: 30 }} />
-              <Star size={4} twinkleDuration={3000} delay={500} style={{ top: 80, left: 300 }} />
-              <Star size={2} twinkleDuration={2800} delay={1000} style={{ top: 120, left: 150 }} />
-              <Star size={3} twinkleDuration={3200} delay={1500} style={{ top: 60, left: 250 }} />
-              <Star size={2} twinkleDuration={2200} delay={200} style={{ top: 160, left: 80 }} />
-              <Star size={4} twinkleDuration={3500} delay={800} style={{ top: 20, left: 200 }} />
-            </>
-          ) : (
-            <>
-              <Cloud opacity={0.5} speed={25000} y={40} width={90} height={30} />
-              <Cloud opacity={0.35} speed={35000} y={90} width={120} height={35} />
-              <Cloud opacity={0.25} speed={45000} y={140} width={80} height={28} />
-            </>
-          )}
+    <BodhiniScreen scroll={true} contentStyle={styles.page}>
+      <View style={styles.topHeader}>
+        <View style={styles.topBrand}>
+          <BodhiniLogoMark size={32} />
+          <Text style={[styles.topBrandText, { color: colors.text, fontSize: theme.typeScale.bodyStrong.fontSize }]}>
+            {t(language, "brandName")}
+          </Text>
         </View>
-        <Image source={require("../../assets/images/welcome-landscape.png")} style={styles.heroImage} contentFit="cover" transition={200} />
-        <FloatingCard floatDuration={3500} rotateAmplitude={1.5} style={styles.floatingCard}>
-          <View style={[styles.mockCard, { backgroundColor: colors.surface }]}>
-            <View style={[styles.mockLine, { backgroundColor: colors.border }]} />
-            <View style={[styles.mockLine, { backgroundColor: colors.border }]} />
-            <View style={styles.mockCheck} />
+        <Hint hint={t(language, "hintSkipOnboarding")} label={t(language, "skip")}>
+          <PressableScale
+            onPress={handleSkip}
+            accessibilityRole="button"
+            accessibilityLabel={t(language, "skip")}
+            style={styles.skipButton}
+          >
+            <Text style={[styles.skipText, { color: colors.secondaryText, fontSize: theme.typeScale.body.fontSize }]}>
+              {t(language, "skip")}
+            </Text>
+          </PressableScale>
+        </Hint>
+      </View>
+
+      <View style={styles.illustrationArea}>
+        <View style={styles.cardFanWrap}>
+          <View
+            style={[
+              styles.fanCardBack,
+              { backgroundColor: colors.primary, borderColor: colors.primary },
+            ]}
+          />
+          <View
+            style={[
+              styles.fanCardMid,
+              { backgroundColor: colors.forestLight, borderColor: colors.separator },
+            ]}
+          />
+          <View
+            style={[
+              styles.fanCardFront,
+              { backgroundColor: colors.surface, borderColor: colors.primary },
+            ]}
+          >
+            <View style={[styles.docLineShort, { backgroundColor: colors.primary }]} />
+            <View style={[styles.docLineFull, { backgroundColor: colors.primary }]} />
+            <View style={[styles.docLineMid, { backgroundColor: colors.primary }]} />
           </View>
-        </FloatingCard>
-      </View>
-      <View style={[styles.footer, { backgroundColor: `rgba(${isDark ? "22,24,21" : "250,248,245"},0.92)` }]}>
-        <PrimaryButton title={t(language, "start")} icon={<ArrowRight size={18} color={colors.onPrimary} />} onPress={() => router.push("/(onboarding)/language")} />
-        <Text style={[styles.languages, { color: colors.text }]}>Bengali  ·  Hindi  ·  English</Text>
-        <View style={styles.themeRow}>
-          <Pressable onPress={() => setMode("light")} style={[styles.themeBtn, !isDark && styles.themeBtnActive, { backgroundColor: !isDark ? colors.primary : colors.surfaceAlt, borderColor: !isDark ? colors.primary : colors.border }]} accessibilityRole="button" accessibilityLabel="Light">
-            <Sun size={18} color={!isDark ? colors.onPrimary : colors.textMuted} />
-          </Pressable>
-          <Pressable onPress={() => setMode("dark")} style={[styles.themeBtn, isDark && styles.themeBtnActive, { backgroundColor: isDark ? colors.primary : colors.surfaceAlt, borderColor: isDark ? colors.primary : colors.border }]} accessibilityRole="button" accessibilityLabel="Dark">
-            <Moon size={18} color={isDark ? colors.onPrimary : colors.textMuted} />
-          </Pressable>
         </View>
+      </View>
+
+      <FadeInUp key={slideIndex} index={0}>
+        <View style={styles.textBlock}>
+          <Text
+            style={[
+              styles.slideTitle,
+              {
+                color: colors.text,
+                fontSize: theme.typeScale.title.fontSize,
+                lineHeight: theme.typeScale.title.lineHeight,
+              },
+            ]}
+          >
+            {currentSlide.title}
+          </Text>
+          <Text
+            style={[
+              styles.slideBody,
+              {
+                color: colors.secondaryText,
+                fontSize: theme.typeScale.body.fontSize,
+                lineHeight: theme.typeScale.body.lineHeight,
+              },
+            ]}
+          >
+            {currentSlide.body}
+          </Text>
+        </View>
+      </FadeInUp>
+
+      <View style={styles.languageBar}>
+        {languagePills.map((item) => {
+          const active = language === item.code;
+          return (
+            <Hint key={item.code} hint={t(language, "chooseLanguage")} label={item.label}>
+              <PressableScale
+                onPress={() => setLanguage(item.code).catch(() => undefined)}
+                accessibilityRole="button"
+                accessibilityLabel={item.label}
+                accessibilityState={{ selected: active }}
+                style={[
+                  styles.langPill,
+                  {
+                    backgroundColor: active ? colors.forestLight : colors.surface,
+                    borderColor: active ? colors.primary : colors.separator,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.langPillText,
+                    {
+                      color: active ? colors.forest : colors.secondaryText,
+                      fontSize: theme.typeScale.captionStrong.fontSize,
+                    },
+                  ]}
+                >
+                  {item.label}
+                </Text>
+              </PressableScale>
+            </Hint>
+          );
+        })}
+      </View>
+
+      <View style={styles.dotsRow}>
+        {[0, 1, 2].map((idx) => {
+          const active = idx === slideIndex;
+          return (
+            <PressableScale
+              key={idx}
+              onPress={() => setSlideIndex(idx)}
+              accessibilityRole="button"
+              accessibilityLabel={`${idx + 1}`}
+              accessibilityState={{ selected: active }}
+              style={styles.dotHit}
+            >
+              <View
+                style={[
+                  styles.dot,
+                  {
+                    width: active ? 22 : 8,
+                    backgroundColor: active ? colors.primary : colors.separator,
+                  },
+                ]}
+              />
+            </PressableScale>
+          );
+        })}
+      </View>
+
+      <View style={styles.footer}>
+        <PrimaryButton
+          title={slideIndex < 2 ? t(language, "next") : t(language, "start")}
+          onPress={handleGetStarted}
+          hint={t(language, "start")}
+        />
+        {slideIndex < 2 ? (
+          <PressableScale
+            onPress={() => router.push("/(onboarding)/language")}
+            accessibilityRole="button"
+            accessibilityLabel={t(language, "start")}
+            style={styles.directStartBtn}
+          >
+            <Text style={[styles.directStartText, { color: colors.forest, fontSize: theme.typeScale.captionStrong.fontSize }]}>
+              {t(language, "start")}
+            </Text>
+          </PressableScale>
+        ) : null}
       </View>
     </BodhiniScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, paddingHorizontal: 0, paddingTop: 10, paddingBottom: 10, justifyContent: "space-between", overflow: "hidden" },
-  top: { alignItems: "center", paddingTop: 26, zIndex: 2 },
-  lotus: { width: 76, height: 65, alignItems: "center", justifyContent: "center", marginBottom: 2 },
-  brand: { fontFamily: "serif", fontSize: 49, lineHeight: 58, fontWeight: "700", letterSpacing: -1.8 },
-  tagline: { textAlign: "center", fontFamily: "serif", fontSize: 21, lineHeight: 27, marginTop: 3 },
-  description: { textAlign: "center", fontFamily: "serif", fontSize: 14, lineHeight: 20, marginTop: 20 },
-  heroWrap: { flex: 1, marginTop: -3, marginHorizontal: 0, position: "relative" },
-  sky: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 },
-  heroImage: { width: "100%", height: "100%", aspectRatio: 16 / 9 },
-  floatingCard: { position: "absolute", right: 20, bottom: 120, zIndex: 3 },
-  mockCard: { width: 110, height: 70, borderRadius: 12, padding: 10, gap: 6, shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
-  mockLine: { height: 10, borderRadius: 5 },
-  mockCheck: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 },
-  footer: { paddingHorizontal: 25, paddingTop: 10, paddingBottom: 6, borderTopWidth: 1 },
-  languages: { textAlign: "center", fontFamily: "serif", fontSize: 13, marginTop: 14 },
-  themeRow: { flexDirection: "row", justifyContent: "center", gap: 12, marginTop: 10 },
-  themeBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", borderWidth: 1 },
-  themeBtnActive: {},
+  splashContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  splashCenter: {
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 32,
+  },
+  splashBrand: {
+    fontWeight: "700",
+    marginTop: 8,
+    letterSpacing: -0.6,
+  },
+  splashSub: {
+    textAlign: "center",
+    maxWidth: 220,
+    lineHeight: 20,
+  },
+  splashPulse: {
+    marginTop: 16,
+  },
+  page: {
+    justifyContent: "space-between",
+    paddingTop: 8,
+  },
+  topHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  topBrand: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  topBrandText: {
+    fontWeight: "700",
+  },
+  skipButton: {
+    minWidth: 48,
+    minHeight: 48,
+    paddingHorizontal: 8,
+    alignItems: "flex-end",
+    justifyContent: "center",
+  },
+  skipText: {
+    fontWeight: "500",
+  },
+  illustrationArea: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 24,
+  },
+  cardFanWrap: {
+    width: 180,
+    height: 170,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+  },
+  fanCardBack: {
+    position: "absolute",
+    width: 104,
+    height: 128,
+    borderRadius: 18,
+    borderWidth: 2,
+    transform: [{ rotate: "-16deg" }, { translateX: -22 }, { translateY: 4 }],
+  },
+  fanCardMid: {
+    position: "absolute",
+    width: 104,
+    height: 128,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    transform: [{ rotate: "-5deg" }, { translateX: -6 }, { translateY: -4 }],
+  },
+  fanCardFront: {
+    width: 108,
+    height: 132,
+    borderRadius: 18,
+    borderWidth: 2.5,
+    paddingHorizontal: 18,
+    paddingVertical: 24,
+    justifyContent: "center",
+    gap: 12,
+    transform: [{ rotate: "6deg" }, { translateX: 12 }, { translateY: 2 }],
+  },
+  docLineShort: {
+    width: 36,
+    height: 6,
+    borderRadius: 3,
+  },
+  docLineFull: {
+    width: "100%",
+    height: 6,
+    borderRadius: 3,
+  },
+  docLineMid: {
+    width: "75%",
+    height: 6,
+    borderRadius: 3,
+  },
+  textBlock: {
+    gap: 10,
+    paddingHorizontal: 4,
+  },
+  slideTitle: {
+    fontWeight: "700",
+    letterSpacing: -0.4,
+  },
+  slideBody: {
+    marginTop: 2,
+  },
+  languageBar: {
+    flexDirection: "row",
+    justifyContent: "center",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 16,
+  },
+  langPill: {
+    minHeight: 48,
+    minWidth: 88,
+    paddingHorizontal: 16,
+    borderRadius: 999,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  langPillText: {
+    fontWeight: "600",
+  },
+  dotsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginVertical: 8,
+  },
+  dotHit: {
+    minWidth: 48,
+    minHeight: 48,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dot: {
+    height: 8,
+    borderRadius: 4,
+  },
+  footer: {
+    gap: 8,
+    marginTop: 4,
+  },
+  directStartBtn: {
+    minHeight: 48,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  directStartText: {
+    fontWeight: "600",
+  },
 });

@@ -1,14 +1,14 @@
 import "../../global.css";
+import React from "react";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AppProvider } from "../state/AppContext";
 import { ThemeProvider, useTheme } from "../theme/ThemeProvider";
-import { useColorScheme } from "react-native";
+import { ComingSoonSheet, HintOverlay, TopToast } from "../components/motion";
 
 function RootContent() {
-  const { isDark } = useTheme();
-  const systemScheme = useColorScheme();
+  const { isDark, colors } = useTheme();
 
   return (
     <>
@@ -16,10 +16,14 @@ function RootContent() {
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: isDark ? "#161817" : "#FAF8F5" },
+          contentStyle: { backgroundColor: colors.background },
           animation: "fade",
+          animationDuration: 150,
         }}
       />
+      <ComingSoonSheet />
+      <TopToast />
+      <HintOverlay />
     </>
   );
 }

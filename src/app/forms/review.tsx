@@ -1,110 +1,304 @@
-import React, { useMemo, useState, useRef, useEffect } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Alert, StyleSheet, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
-import { Copy, ShieldCheck } from "lucide-react-native";
+import {
+  AlertCircle,
+  Check,
+  CheckSquare,
+  ChevronRight,
+  Copy,
+  Eye,
+  EyeOff,
+  FileText,
+  Info,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react-native";
 import * as Clipboard from "expo-clipboard";
-import { BodhiniScreen, FieldInput, PageHeading, PrimaryButton, StatusPill, TopBar } from "../../components/ui/BodhiniUI";
+import {
+  BodhiniScreen,
+  EmptyState,
+  PrimaryButton,
+  SecondaryButton,
+  StatusPill,
+  TopBar,
+} from "../../components/ui/BodhiniUI";
 import { useBodhini } from "../../state/AppContext";
 import type { FilledField } from "../../domain/form/form.types";
-import { t } from "../../i18n/translations";
-import { FadeInUp } from "../../components/motion";
+import { FieldValidator } from "../../infrastructure/validation/field-validator";
+import { CONFIDENCE_THRESHOLD } from "../../domain/constants";
+import { fieldKeyLabel, t } from "../../i18n/translations";
+import { FadeInUp, Hint, PressableScale } from "../../components/motion";
 import { useTheme } from "../../theme/ThemeProvider";
 
-function statusLabel(status: FilledField["status"], language: "en" | "bn" | "hi"): string {
-  if (status === "FILLED") return t(language, "matched");
-  if (status === "SKIPPED") return t(language, "skipped");
-  return t(language, "missing");
+function statusLabel(field: FilledField, language: "en" | "bn" | "hi"): string {
+  if (field.status === "SKIPPED") return t(language, "skipped");
+  if (field.status === "FILLED") {
+    return field.confidence < CONFIDENCE_THRESHOLD ? t(language, "needsReview") : t(language, "detected");
+  }
+  return t(language, "needsInput");
 }
 
 export default function FormReviewScreen() {
   const router = useRouter();
-  const { filledFields, setFilledFields, language } = useBodhini();
-  const { colors } = useTheme();
-  const [copyingId, setCopyingId] = useState<string | null>(null);
-  const [focusedField, setFocusedField] = useState<string | null>(null);
+  const { filledFields, setFilledFields, pendingFormInput, language, openComingSoon, showToast } = useBodhini();
+  const { colors, theme } = useTheme();
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [revealAadhaar, setRevealAadhaar] = useState(false);
+  const [editingAadhaarId, setEditingAadhaarId] = useState<string | null>(null);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const counts = useMemo(() => ({
-    filled: filledFields.filter((field) => field.status === "FILLED").length,
-    missing: filledFields.filter((field) => field.status === "NEEDS_USER").length,
-    skipped: filledFields.filter((field) => field.status === "SKIPPED").length,
-  }), [filledFields]);
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    };
+  }, []);
 
-  const updateField = (id: string, value: string) => {
-    setFocusedField(id);
-    setTimeout(() => setFocusedField(null), 300);
-    setFilledFields((current) => current.map((item) => {
-      if (item.field.id !== id || item.status === "SKIPPED") return item;
-      const nextValue = value;
-      return { ...item, value: nextValue, status: nextValue.trim() ? "FILLED" : "NEEDS_USER", confidence: nextValue.trim() ? 1 : 0 };
-    }));
-  };
+  const counts = useMemo(() => {
+    const matched = filledFields.filter((f) => f.status === "FILLED" && f.confidence >= CONFIDENCE_THRESHOLD).length;
+    const needsReview = filledFields.filter(
+      (f) => (f.status === "FILLED" && f.confidence < CONFIDENCE_THRESHOLD) || f.status === "SKIPPED",
+    ).length;
+    const missing = filledFields.filter((f) => f.status === "NEEDS_USER").length;
+    return { matched, needsReview, missing };
+  }, [filledFields]);
 
-  const copyValue = async (field: FilledField) => {
+  const updateField = useCallback((id: string, value: string) => {
+    setFilledFields((current) =>
+      current.map((item) => {
+        if (item.field.id !== id || item.status === "SKIPPED") return item;
+        const trimmed = value.trim();
+        return {
+          ...item,
+          value,
+          status: trimmed ? "FILLED" : "NEEDS_USER",
+          confidence: trimmed ? 1 : 0,
+        };
+      }),
+    );
+  }, [setFilledFields]);
+
+  const copyValue = useCallback(async (field: FilledField) => {
     if (field.status !== "FILLED" || !field.value) return;
-    setCopyingId(field.field.id);
     try {
       await Clipboard.setStringAsync(field.value, { android: { isSensitive: true } });
-      Alert.alert(t(language, "copied"), `${field.field.label}: ${t(language, "copied")}`);
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+      setCopiedId(field.field.id);
+      showToast(`${field.field.label}: ${t(language, "copied")}`);
+      copyTimerRef.current = setTimeout(() => {
+        setCopiedId(null);
+      }, 1500);
     } catch {
       Alert.alert(t(language, "copyFailed"), t(language, "pleaseTryAgain"));
-    } finally { setCopyingId(null); }
-  };
+    }
+  }, [language, showToast]);
 
   if (filledFields.length === 0) {
     return (
       <BodhiniScreen contentStyle={styles.page}>
-        <TopBar onBack={() => router.back()} />
-        <PageHeading title={t(language, "nothingToReview")} subtitle={t(language, "chooseAnotherSource")} />
-        <PrimaryButton title={t(language, "chooseAForm")} onPress={() => router.replace("/(tabs)/forms")} />
+        <TopBar title={t(language, "formTitle")} onBack={() => router.back()} />
+        <EmptyState
+          icon={<FileText size={30} color={colors.primary} />}
+          title={t(language, "nothingToReview")}
+          subtitle={t(language, "chooseAnotherSource")}
+          actionTitle={t(language, "chooseAForm")}
+          onAction={() => router.replace("/(tabs)/forms")}
+        />
       </BodhiniScreen>
     );
   }
 
+  const fileName =
+    pendingFormInput?.kind === "SAMPLE"
+      ? `${t(language, "sampleFormFile")}.pdf`
+      : `${t(language, "scannedFormFile")}.jpg`;
+
   return (
     <BodhiniScreen contentStyle={styles.page}>
       <TopBar title={t(language, "reviewFilledForm")} onBack={() => router.back()} />
-      <PageHeading title={t(language, "reviewFilledForm")} subtitle={t(language, "reviewMatched")} />
-      <View style={[styles.summary, { backgroundColor: colors.forestLight }]}>
-        <View><Text style={[styles.summaryNumber, { color: colors.forest }]}>{counts.filled}</Text><Text style={[styles.summaryLabel, { color: colors.forest }]}>{t(language, "matched")}</Text></View>
-        <View><Text style={[styles.summaryNumber, { color: colors.forest }]}>{counts.missing}</Text><Text style={[styles.summaryLabel, { color: colors.forest }]}>{t(language, "needsInput")}</Text></View>
-        <View><Text style={[styles.summaryNumber, { color: colors.forest }]}>{counts.skipped}</Text><Text style={[styles.summaryLabel, { color: colors.forest }]}>{t(language, "manual")}</Text></View>
-      </View>
-      <View style={[styles.formPaper, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={[styles.formTitle, { color: colors.text }]}>{t(language, "applicationForm")}</Text>
-        <Text style={[styles.formSub, { color: colors.textMuted }]}>{t(language, "reviewValuesBelow")}</Text>
+
+      <FadeInUp index={0}>
+        <Hint hint={t(language, "chooseAnotherSource")} label={fileName}>
+          <PressableScale
+            onPress={() => router.push("/(tabs)/forms")}
+            accessibilityRole="button"
+            accessibilityLabel={fileName}
+            style={[styles.fileCard, { backgroundColor: colors.surface, borderColor: colors.separator }]}
+          >
+            <View style={[styles.pdfBadge, { backgroundColor: colors.pdfBadge }]}>
+              <Text style={[styles.pdfBadgeText, { color: colors.onPrimary }]}>PDF</Text>
+            </View>
+            <View style={styles.fileTextWrap}>
+              <Text numberOfLines={1} style={[styles.fileName, { color: colors.text, fontSize: theme.typeScale.bodyStrong.fontSize }]}>
+                {fileName}
+              </Text>
+              <Text style={[styles.fileMeta, { color: colors.secondaryText, fontSize: theme.typeScale.caption.fontSize }]}>
+                {filledFields.length} {t(language, "fieldsDetected")}
+              </Text>
+            </View>
+            <ChevronRight size={20} color={colors.secondaryText} />
+          </PressableScale>
+        </Hint>
+      </FadeInUp>
+
+      <FadeInUp index={1}>
+        <View style={[styles.summaryCard, { backgroundColor: colors.surface, borderColor: colors.separator }]}>
+          <View style={[styles.summaryRow, { borderBottomColor: colors.separator }]}>
+            <CheckSquare size={20} color={colors.success} />
+            <Text style={[styles.summaryRowLabel, { color: colors.text, fontSize: theme.typeScale.body.fontSize }]}>
+              {t(language, "matched")}
+            </Text>
+            <Text style={[styles.summaryRowCount, { color: colors.text, fontSize: theme.typeScale.bodyStrong.fontSize }]}>
+              {counts.matched}
+            </Text>
+          </View>
+          <View style={[styles.summaryRow, { borderBottomColor: colors.separator }]}>
+            <AlertCircle size={20} color={colors.warning} />
+            <Text style={[styles.summaryRowLabel, { color: colors.text, fontSize: theme.typeScale.body.fontSize }]}>
+              {t(language, "needsReview")}
+            </Text>
+            <Text style={[styles.summaryRowCount, { color: colors.text, fontSize: theme.typeScale.bodyStrong.fontSize }]}>
+              {counts.needsReview}
+            </Text>
+          </View>
+          <View style={[styles.summaryRow, styles.summaryRowLast]}>
+            <Info size={20} color={colors.secondaryText} />
+            <Text style={[styles.summaryRowLabel, { color: colors.text, fontSize: theme.typeScale.body.fontSize }]}>
+              {t(language, "missing")}
+            </Text>
+            <Text style={[styles.summaryRowCount, { color: colors.text, fontSize: theme.typeScale.bodyStrong.fontSize }]}>
+              {counts.missing}
+            </Text>
+          </View>
+        </View>
+      </FadeInUp>
+
+      <View style={styles.fieldsWrap}>
         {filledFields.map((item, index) => {
           const isSkipped = item.status === "SKIPPED";
-          const isAadhaar = item.matchedKey === "AADHAAR_NO";
-          const visibleValue = item.value ?? "";
+          const isAadhaar = item.matchedKey === "AADHAAR_NO" || item.field.key === "AADHAAR_NO";
+          const rawValue = item.value ?? "";
+          const isEditingThisAadhaar = editingAadhaarId === item.field.id;
+          const displayValue =
+            isAadhaar && rawValue && !revealAadhaar && !isEditingThisAadhaar
+              ? FieldValidator.maskAadhaar(rawValue)
+              : rawValue;
+          const isCopied = copiedId === item.field.id;
+          const isLowConf = item.status === "FILLED" && item.confidence < CONFIDENCE_THRESHOLD;
+          const labelText = item.field.key
+            ? fieldKeyLabel(language, item.field.key, item.field.label)
+            : item.field.label;
+
           return (
-            <FadeInUp key={item.field.id} index={index} maxAnimated={8}>
-              <View style={[styles.formField, { borderTopColor: colors.border }]}>
+            <FadeInUp key={item.field.id} index={index + 2} maxAnimated={8}>
+              <View
+                style={[
+                  styles.fieldCard,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: isLowConf || item.status === "NEEDS_USER" ? colors.warning : colors.separator,
+                    borderWidth: isLowConf || item.status === "NEEDS_USER" ? 1.5 : StyleSheet.hairlineWidth,
+                  },
+                ]}
+              >
                 <View style={styles.fieldTop}>
-                  <Text style={[styles.fieldTitle, { color: colors.text }]}>{index + 1}. {item.field.label}</Text>
-                  <StatusPill label={statusLabel(item.status, language)} tone={item.status === "FILLED" ? "green" : item.status === "SKIPPED" ? "neutral" : "gold"} />
+                  <Text style={[styles.fieldTitle, { color: colors.text, fontSize: theme.typeScale.captionStrong.fontSize }]}>
+                    {index + 1}. {labelText}
+                  </Text>
+                  <StatusPill
+                    label={statusLabel(item, language)}
+                    tone={
+                      item.status === "FILLED" && !isLowConf
+                        ? "green"
+                        : item.status === "SKIPPED"
+                          ? "neutral"
+                          : "gold"
+                    }
+                  />
                 </View>
+
                 {isSkipped ? (
-                  <Text style={[styles.manualNote, { color: colors.textMuted }]}>{item.matchReason ?? t(language, "manualComplete")}</Text>
+                  <Text style={[styles.manualNote, { color: colors.secondaryText, fontSize: theme.typeScale.caption.fontSize }]}>
+                    {t(language, "manualComplete")}
+                  </Text>
                 ) : (
                   <>
-                    <View style={focusedField === item.field.id ? styles.fieldInputWrapperFocused : styles.fieldInputWrapper}>
-                      <FieldInput
-                        label={t(language, "answer")}
-                        value={visibleValue}
-                        onChangeText={(value) => updateField(item.field.id, value)}
+                    <View style={[styles.inputRow, { backgroundColor: colors.background, borderColor: colors.separator }]}>
+                      <TextInput
+                        value={displayValue}
+                        onChangeText={(val) => updateField(item.field.id, val)}
+                        onFocus={() => {
+                          if (isAadhaar) setEditingAadhaarId(item.field.id);
+                        }}
+                        onBlur={() => {
+                          if (isAadhaar) setEditingAadhaarId(null);
+                        }}
                         placeholder={t(language, "enterAnswer")}
+                        placeholderTextColor={colors.secondaryText}
                         multiline={item.field.key === "ADDRESS"}
+                        accessibilityLabel={labelText}
+                        style={[
+                          styles.textInput,
+                          { color: colors.text, fontSize: theme.typeScale.bodyStrong.fontSize },
+                        ]}
                       />
+                      {isAadhaar && rawValue ? (
+                        <Hint
+                          hint={t(language, "hintRevealAadhaar")}
+                          label={revealAadhaar ? t(language, "hideAadhaar") : t(language, "revealAadhaar")}
+                        >
+                          <PressableScale
+                            onPress={() => setRevealAadhaar((v) => !v)}
+                            accessibilityRole="button"
+                            accessibilityLabel={revealAadhaar ? t(language, "hideAadhaar") : t(language, "revealAadhaar")}
+                            style={styles.eyeHit}
+                          >
+                            {revealAadhaar ? (
+                              <EyeOff size={18} color={colors.secondaryText} />
+                            ) : (
+                              <Eye size={18} color={colors.secondaryText} />
+                            )}
+                          </PressableScale>
+                        </Hint>
+                      ) : null}
                     </View>
-                    {isAadhaar && visibleValue ? <Text style={[styles.maskNote, { color: colors.textMuted }]}>{t(language, "sensitiveCopyNote")}</Text> : null}
-                    {item.status === "FILLED" && item.value ? (
-                      <Pressable onPress={() => copyValue(item)} style={[styles.copyButton, { backgroundColor: colors.forestLight }]}>
-                        <Copy size={14} color={colors.primary} />
-                        <Text style={[styles.copyText, { color: colors.primary }]}>{copyingId === item.field.id ? t(language, "copying") : t(language, "copyAnswer")}</Text>
-                      </Pressable>
-                    ) : (
-                      <Text style={[styles.missingNote, { color: colors.warning }]}>{item.matchReason ?? t(language, "missingValue")}</Text>
-                    )}
+
+                    <View style={styles.fieldFooterRow}>
+                      {item.status === "FILLED" && rawValue ? (
+                        <Hint hint={t(language, "hintCopyField")} label={isCopied ? t(language, "copied") : t(language, "copyAnswer")}>
+                          <PressableScale
+                            onPress={() => copyValue(item)}
+                            accessibilityRole="button"
+                            accessibilityLabel={isCopied ? t(language, "copied") : t(language, "copyAnswer")}
+                            style={[
+                              styles.copyChip,
+                              { backgroundColor: isCopied ? colors.successLight : colors.forestLight },
+                            ]}
+                          >
+                            {isCopied ? (
+                              <Check size={14} color={colors.success} strokeWidth={2.5} />
+                            ) : (
+                              <Copy size={14} color={colors.forest} />
+                            )}
+                            <Text
+                              style={[
+                                styles.copyChipText,
+                                {
+                                  color: isCopied ? colors.success : colors.forest,
+                                  fontSize: theme.typeScale.label.fontSize,
+                                },
+                              ]}
+                            >
+                              {isCopied ? t(language, "copied") : t(language, "copyAnswer")}
+                            </Text>
+                          </PressableScale>
+                        </Hint>
+                      ) : (
+                        <Text style={[styles.missingNote, { color: colors.warning, fontSize: theme.typeScale.label.fontSize }]}>
+                          {t(language, "missingValue")}
+                        </Text>
+                      )}
+                    </View>
                   </>
                 )}
               </View>
@@ -112,30 +306,162 @@ export default function FormReviewScreen() {
           );
         })}
       </View>
-      <View style={[styles.safety, { backgroundColor: colors.forestLight }]}><ShieldCheck size={20} color={colors.forest} /><Text style={[styles.safetyText, { color: colors.forest }]}>{t(language, "safetyRule")}</Text></View>
-      <PrimaryButton title={t(language, "exportSave")} onPress={() => router.push("/forms/result")} style={{ marginTop: 19 }} />
+
+      <View style={[styles.safety, { backgroundColor: colors.forestLight }]}>
+        <ShieldCheck size={20} color={colors.forest} />
+        <Text style={[styles.safetyText, { color: colors.forest, fontSize: theme.typeScale.label.fontSize }]}>
+          {t(language, "safetyRule")}
+        </Text>
+      </View>
+
+      <View style={styles.bottomActions}>
+        <PrimaryButton
+          title={t(language, "exportSave")}
+          onPress={() => router.push("/forms/result")}
+          hint={t(language, "exportSave")}
+        />
+        <SecondaryButton
+          title={t(language, "fillWithAi")}
+          onPress={() => openComingSoon(t(language, "fillWithAi"))}
+          hint={t(language, "comingSoonMessage")}
+        />
+      </View>
     </BodhiniScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  page: { paddingTop: 8 },
-  summary: { flexDirection: "row", justifyContent: "space-around", padding: 13, borderRadius: 15, marginBottom: 14 },
-  summaryNumber: { fontFamily: "serif", fontSize: 21, fontWeight: "700", textAlign: "center" },
-  summaryLabel: { fontSize: 10, textAlign: "center", marginTop: 2 },
-  formPaper: { borderWidth: 1, borderRadius: 17, padding: 15 },
-  formTitle: { fontFamily: "serif", fontSize: 19, fontWeight: "700", textAlign: "center" },
-  formSub: { fontSize: 11, textAlign: "center", marginTop: 4, marginBottom: 13 },
-  formField: { paddingVertical: 12, borderTopWidth: 1 },
-  fieldTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 10 },
-  fieldTitle: { flex: 1, fontSize: 13, fontWeight: "600" },
-  fieldInputWrapper: {},
-  fieldInputWrapperFocused: { borderWidth: 2, borderRadius: 12 },
-  copyButton: { alignSelf: "flex-start", flexDirection: "row", gap: 6, alignItems: "center", paddingVertical: 7, paddingHorizontal: 10, borderRadius: 12, marginTop: -4 },
-  copyText: { fontSize: 11, fontWeight: "700" },
-  missingNote: { fontSize: 11, marginTop: -4, lineHeight: 16 },
-  manualNote: { fontSize: 12, lineHeight: 18 },
-  maskNote: { fontSize: 10, marginTop: -5, marginBottom: 8 },
-  safety: { flexDirection: "row", gap: 9, alignItems: "center", padding: 13, marginTop: 14, borderRadius: 14 },
-  safetyText: { fontSize: 11, lineHeight: 16, flex: 1 },
+  page: {
+    paddingTop: 4,
+  },
+  fileCard: {
+    minHeight: 72,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    marginBottom: 14,
+  },
+  pdfBadge: {
+    width: 42,
+    height: 48,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pdfBadgeText: {
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.4,
+  },
+  fileTextWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  fileName: {
+    fontWeight: "600",
+  },
+  fileMeta: {},
+  summaryCard: {
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: "hidden",
+    marginBottom: 16,
+  },
+  summaryRow: {
+    minHeight: 52,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  summaryRowLast: {
+    borderBottomWidth: 0,
+  },
+  summaryRowLabel: {
+    flex: 1,
+    fontWeight: "500",
+  },
+  summaryRowCount: {
+    fontWeight: "700",
+  },
+  fieldsWrap: {
+    gap: 10,
+  },
+  fieldCard: {
+    borderRadius: 16,
+    padding: 14,
+    gap: 10,
+  },
+  fieldTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  fieldTitle: {
+    flex: 1,
+    fontWeight: "600",
+  },
+  inputRow: {
+    minHeight: 48,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  textInput: {
+    flex: 1,
+    fontWeight: "600",
+    paddingVertical: 8,
+  },
+  eyeHit: {
+    width: 48,
+    height: 48,
+    alignItems: "flex-end",
+    justifyContent: "center",
+  },
+  fieldFooterRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  copyChip: {
+    minHeight: 48,
+    flexDirection: "row",
+    gap: 6,
+    alignItems: "center",
+    paddingHorizontal: 14,
+    borderRadius: 12,
+  },
+  copyChipText: {
+    fontWeight: "700",
+  },
+  missingNote: {
+    lineHeight: 16,
+  },
+  manualNote: {
+    lineHeight: 18,
+  },
+  safety: {
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "center",
+    padding: 14,
+    marginTop: 16,
+    borderRadius: 16,
+  },
+  safetyText: {
+    lineHeight: 17,
+    flex: 1,
+  },
+  bottomActions: {
+    gap: 10,
+    marginTop: 18,
+  },
 });
