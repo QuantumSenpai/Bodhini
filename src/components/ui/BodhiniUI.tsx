@@ -13,13 +13,17 @@ import {
   type ViewStyle,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChevronLeft, ChevronRight, CreditCard, FileText, Folder, Volume2 } from "lucide-react-native";
+import { Image } from "expo-image";
+import { ChevronLeft, ChevronRight, FileText, Folder, Volume2 } from "lucide-react-native";
 import { useTheme } from "../../theme/ThemeProvider";
 import { documentTypeLabel, t } from "../../i18n/translations";
 import { useBodhini } from "../../state/AppContext";
-import { EmptyStateIllustration, FadeInUp, Hint, PressableScale } from "../motion";
+import { EmptyStateIllustration, FadeInUp, Hint, MarkEntrance, PressableScale } from "../motion";
 import type { DocumentRecord } from "../../domain/document/document.types";
 import { FieldValidator } from "../../infrastructure/validation/field-validator";
+
+const markGreen = require("../../../assets/images/bodhini-mark-green.png");
+const markWhite = require("../../../assets/images/bodhini-mark-white.png");
 
 export { documentTypeLabel, EmptyStateIllustration };
 
@@ -424,25 +428,122 @@ export function Divider() {
   return <View style={[styles.divider, { backgroundColor: colors.separator }]} />;
 }
 
-export function BodhiniLogoMark({ size = 56 }: { size?: number }) {
-  const { colors } = useTheme();
-  const height = Math.round(size * 1.2);
+export function BodhiniLogoMark({
+  width = 56,
+  height = 75,
+  size,
+}: {
+  width?: number;
+  height?: number;
+  size?: number;
+}) {
+  const { language, reduceMotion } = useBodhini();
+  const { isDark } = useTheme();
+  const resolvedWidth = size ?? width;
+  const resolvedHeight = size ? Math.round((size * 75) / 56) : height;
+  const source = isDark ? markWhite : markGreen;
+
+  return (
+    <Image
+      source={source}
+      contentFit="contain"
+      transition={reduceMotion ? 0 : 180}
+      accessibilityLabel={t(language, "bodhiniLogoAlt")}
+      style={{ width: resolvedWidth, height: resolvedHeight }}
+    />
+  );
+}
+
+export function BrandBlock({
+  variant = "compact",
+}: {
+  variant?: "compact" | "welcome";
+}) {
+  const { language } = useBodhini();
+  const { colors, theme } = useTheme();
+  const isWelcome = variant === "welcome";
+
+  return (
+    <View style={isWelcome ? styles.brandWelcomeWrap : styles.brandCompactWrap}>
+      <MarkEntrance>
+        <BodhiniLogoMark
+          width={isWelcome ? 72 : 56}
+          height={isWelcome ? 96 : 75}
+        />
+      </MarkEntrance>
+      <View style={isWelcome ? styles.brandWelcomeText : styles.brandCompactText}>
+        <Text
+          numberOfLines={1}
+          style={[
+            styles.brandWordmark,
+            {
+              color: colors.text,
+              fontSize: isWelcome ? theme.typeScale.largeTitle.fontSize : theme.typeScale.h2.fontSize,
+              lineHeight: isWelcome ? theme.typeScale.largeTitle.lineHeight : theme.typeScale.h2.lineHeight,
+            },
+          ]}
+        >
+          {t(language, "brandName")}
+        </Text>
+        <Text
+          numberOfLines={2}
+          style={[
+            styles.brandTagline,
+            {
+              color: colors.secondaryText,
+              fontSize: theme.typeScale.caption.fontSize,
+              lineHeight: theme.typeScale.caption.lineHeight,
+            },
+            isWelcome && styles.textCenter,
+          ]}
+        >
+          {t(language, "brandShortTagline")}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+export function WatermarkFooter() {
+  const { language } = useBodhini();
+  const { colors, theme } = useTheme();
+  const line1 = t(language, "creditLine1");
+  const line2 = t(language, "creditLine2");
+
   return (
     <View
-      style={[
-        styles.logoDoc,
-        {
-          width: size,
-          height,
-          borderColor: colors.primary,
-          backgroundColor: colors.surface,
-        },
-      ]}
+      accessible
+      accessibilityRole="text"
+      accessibilityLabel={`${line1}. ${line2}`}
+      style={styles.watermarkFooter}
     >
-      <View style={[styles.logoCorner, { borderColor: colors.primary }]} />
-      <View style={[styles.logoLine, { width: size * 0.48, backgroundColor: colors.primary }]} />
-      <View style={[styles.logoLine, { width: size * 0.56, backgroundColor: colors.primary }]} />
-      <View style={[styles.logoLine, { width: size * 0.36, backgroundColor: colors.primary }]} />
+      <View style={styles.watermarkTopRow}>
+        <BodhiniLogoMark width={11} height={14} />
+        <Text
+          style={[
+            styles.watermarkLine1,
+            {
+              color: colors.textMuted,
+              fontSize: theme.typeScale.caption.fontSize,
+              lineHeight: theme.typeScale.caption.lineHeight,
+            },
+          ]}
+        >
+          {line1}
+        </Text>
+      </View>
+      <Text
+        style={[
+          styles.watermarkLine2,
+          {
+            color: colors.textMuted,
+            fontSize: theme.typeScale.label.fontSize,
+            lineHeight: theme.typeScale.label.lineHeight,
+          },
+        ]}
+      >
+        {line2}
+      </Text>
     </View>
   );
 }
@@ -636,28 +737,52 @@ const styles = StyleSheet.create({
   emptySubtitle: { textAlign: "center", marginTop: 8 },
   emptyButton: { marginTop: 20, alignSelf: "stretch" },
   divider: { height: StyleSheet.hairlineWidth, marginVertical: 12 },
-  logoDoc: {
-    borderRadius: 12,
-    borderWidth: 3,
-    paddingHorizontal: 10,
-    paddingVertical: 12,
-    justifyContent: "flex-end",
-    gap: 6,
-    position: "relative",
+  brandCompactWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flexShrink: 1,
   },
-  logoCorner: {
-    position: "absolute",
-    top: -1,
-    right: -1,
-    width: 14,
-    height: 14,
-    borderLeftWidth: 3,
-    borderBottomWidth: 3,
-    borderBottomLeftRadius: 4,
+  brandCompactText: {
+    gap: 4,
+    flexShrink: 1,
   },
-  logoLine: {
-    height: 3.5,
-    borderRadius: 2,
+  brandWelcomeWrap: {
+    alignItems: "center",
+    gap: 12,
+  },
+  brandWelcomeText: {
+    alignItems: "center",
+    gap: 4,
+  },
+  brandWordmark: {
+    fontWeight: "700",
+    letterSpacing: -0.6,
+  },
+  brandTagline: {
+    fontWeight: "400",
+  },
+  watermarkFooter: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 24,
+    paddingBottom: 8,
+    gap: 4,
+  },
+  watermarkTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  watermarkLine1: {
+    fontWeight: "400",
+    textAlign: "center",
+  },
+  watermarkLine2: {
+    fontWeight: "500",
+    textAlign: "center",
+    opacity: 0.85,
   },
   idBadge: {
     borderWidth: 1.8,

@@ -1,11 +1,24 @@
 import React, { useCallback, useMemo } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
+import { Image } from "expo-image";
 import { useFocusEffect, useRouter } from "expo-router";
-import { ChevronRight, FileText, Layers, Scan, Sparkles, UserRound, Volume2 } from "lucide-react-native";
 import {
+  ChevronRight,
+  FileText,
+  Layers,
+  Moon,
+  Scan,
+  Sparkles,
+  Sun,
+  UserRound,
+  Volume2,
+} from "lucide-react-native";
+import {
+  BodhiniLogoMark,
   BodhiniScreen,
-  EmptyStateIllustration,
+  BrandBlock,
   IdBadgeIcon,
+  WatermarkFooter,
   documentTypeLabel,
   getDocumentCardPalette,
   getDocumentSubtitle,
@@ -14,7 +27,15 @@ import { useBodhini } from "../../state/AppContext";
 import { t, type TranslationKey } from "../../i18n/translations";
 import { useTheme } from "../../theme/ThemeProvider";
 import { services } from "../../composition/services";
-import { FadeInUp, Hint, PressableScale, Shimmer } from "../../components/motion";
+import {
+  FadeInUp,
+  HeroFloatCard,
+  Hint,
+  PressableScale,
+  Shimmer,
+} from "../../components/motion";
+
+const heroLandscape = require("../../../assets/images/welcome-landscape.png");
 
 function getGreetingKeys(hasName: boolean): { titleKey: TranslationKey } {
   const hour = new Date().getHours();
@@ -37,8 +58,10 @@ export default function HomeScreen() {
     profileName,
     interactionMode,
     openComingSoon,
+    setThemeMode,
+    setPendingFormInput,
   } = useBodhini();
-  const { colors, theme } = useTheme();
+  const { colors, theme, isDark } = useTheme();
 
   useFocusEffect(
     useCallback(() => {
@@ -53,6 +76,19 @@ export default function HomeScreen() {
   const frontDoc = latestThree[0] ?? null;
   const secondDoc = latestThree[1] ?? null;
   const thirdDoc = latestThree[2] ?? null;
+
+  const handleToggleTheme = useCallback(() => {
+    setThemeMode(isDark ? "light" : "dark").catch(() => undefined);
+  }, [isDark, setThemeMode]);
+
+  const handleScanDocument = useCallback(() => {
+    router.push("/scan/camera");
+  }, [router]);
+
+  const handleTrySampleForm = useCallback(() => {
+    setPendingFormInput({ kind: "SAMPLE", sampleId: "sample" });
+    router.push("/forms/analyzing");
+  }, [router, setPendingFormInput]);
 
   const sayWelcome = useCallback(() => {
     services.voiceService
@@ -71,26 +107,42 @@ export default function HomeScreen() {
   return (
     <BodhiniScreen inTabs contentStyle={styles.page}>
       <View style={styles.headerRow}>
-        <Text style={[styles.brand, { color: colors.text, fontSize: theme.typeScale.h2.fontSize }]}>
-          {t(language, "brandName")}
-        </Text>
-        <Hint hint={t(language, "hintAvatar")} label={t(language, "openProfileSettings")}>
-          <PressableScale
-            onPress={() => router.push("/(tabs)/profile")}
-            accessibilityRole="button"
-            accessibilityLabel={t(language, "openProfileSettings")}
-            style={[styles.avatarHit, { backgroundColor: colors.surface, borderColor: colors.separator }]}
-          >
-            <UserRound size={20} color={colors.text} />
-          </PressableScale>
-        </Hint>
+        <View style={styles.headerLeft}>
+          <BrandBlock variant="compact" />
+        </View>
+        <View style={styles.headerActions}>
+          <Hint hint={t(language, "hintThemeToggle")} label={t(language, "toggleThemeLabel")}>
+            <PressableScale
+              onPress={handleToggleTheme}
+              accessibilityRole="button"
+              accessibilityLabel={t(language, "toggleThemeLabel")}
+              style={[styles.headerIconHit, { backgroundColor: colors.surface, borderColor: colors.separator }]}
+            >
+              {isDark ? (
+                <Sun size={20} color={colors.text} />
+              ) : (
+                <Moon size={20} color={colors.text} />
+              )}
+            </PressableScale>
+          </Hint>
+          <Hint hint={t(language, "hintAvatar")} label={t(language, "openProfileSettings")}>
+            <PressableScale
+              onPress={() => router.push("/(tabs)/profile")}
+              accessibilityRole="button"
+              accessibilityLabel={t(language, "openProfileSettings")}
+              style={[styles.headerIconHit, { backgroundColor: colors.surface, borderColor: colors.separator }]}
+            >
+              <UserRound size={20} color={colors.text} />
+            </PressableScale>
+          </Hint>
+        </View>
       </View>
 
       <FadeInUp index={0}>
         <View style={styles.greetingBlock}>
           {hasName ? (
             <>
-              <Text style={[styles.greetingLead, { color: colors.text, fontSize: theme.typeScale.h3.fontSize }]}>
+              <Text style={[styles.greetingLead, { color: colors.secondaryText, fontSize: theme.typeScale.body.fontSize }]}>
                 {t(language, titleKey)}
               </Text>
               <Text
@@ -108,31 +160,157 @@ export default function HomeScreen() {
               </Text>
             </>
           ) : (
-            <>
-              <Text
-                style={[
-                  styles.greetingName,
-                  {
-                    color: colors.text,
-                    fontSize: theme.typeScale.title.fontSize,
-                    lineHeight: theme.typeScale.title.lineHeight,
-                  },
-                ]}
-              >
-                {t(language, titleKey)}
-              </Text>
-              <Text style={[styles.greetingSub, { color: colors.secondaryText, fontSize: theme.typeScale.caption.fontSize }]}>
-                {t(language, "homePrompt")}
-              </Text>
-            </>
+            <Text
+              style={[
+                styles.greetingName,
+                {
+                  color: colors.text,
+                  fontSize: theme.typeScale.title.fontSize,
+                  lineHeight: theme.typeScale.title.lineHeight,
+                },
+              ]}
+            >
+              {t(language, titleKey)}
+            </Text>
           )}
         </View>
       </FadeInUp>
 
       <FadeInUp index={1}>
-        {documentsLoading && documents.length === 0 ? (
-          <Shimmer height={176} borderRadius={20} style={styles.stackSpacer} />
-        ) : frontDoc && frontPalette ? (
+        <View style={styles.heroArea}>
+          <View
+            pointerEvents="none"
+            style={[
+              styles.heroLandscapeWrap,
+              { backgroundColor: colors.heroBackdropTint, borderColor: colors.separator },
+            ]}
+          >
+            <Image
+              source={heroLandscape}
+              contentFit="cover"
+              style={styles.heroLandscapeImage}
+              accessible={false}
+            />
+            <View
+              style={[
+                styles.heroLandscapeOverlay,
+                { backgroundColor: colors.heroOverlay },
+              ]}
+            />
+          </View>
+
+          <View
+            style={[
+              styles.heroCard,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.separator,
+              },
+            ]}
+          >
+            <View style={styles.heroCardHeader}>
+              <View style={styles.heroTextCol}>
+                <Text
+                  style={[
+                    styles.heroHeadline,
+                    {
+                      color: colors.text,
+                      fontSize: theme.typeScale.h2.fontSize,
+                      lineHeight: theme.typeScale.h2.lineHeight,
+                    },
+                  ]}
+                >
+                  {t(language, "heroHeadline")}
+                </Text>
+                <Text
+                  style={[
+                    styles.heroSupporting,
+                    {
+                      color: colors.secondaryText,
+                      fontSize: theme.typeScale.caption.fontSize,
+                      lineHeight: theme.typeScale.caption.lineHeight,
+                    },
+                  ]}
+                >
+                  {t(language, "heroSupporting")}
+                </Text>
+              </View>
+              <HeroFloatCard style={styles.heroMarkCardWrap}>
+                <View
+                  style={[
+                    styles.heroMarkCard,
+                    {
+                      backgroundColor: colors.surfaceAlt,
+                      borderColor: colors.separator,
+                    },
+                  ]}
+                >
+                  <BodhiniLogoMark width={32} height={43} />
+                </View>
+              </HeroFloatCard>
+            </View>
+
+            <View style={styles.heroPillsRow}>
+              <Hint hint={t(language, "hintQuickScan")} label={t(language, "heroPrimaryCta")}>
+                <PressableScale
+                  onPress={handleScanDocument}
+                  accessibilityRole="button"
+                  accessibilityLabel={t(language, "heroPrimaryCta")}
+                  style={[
+                    styles.primaryPill,
+                    { backgroundColor: colors.primary },
+                  ]}
+                >
+                  <Scan size={18} color={colors.onPrimary} strokeWidth={2.2} />
+                  <Text
+                    style={[
+                      styles.primaryPillText,
+                      {
+                        color: colors.onPrimary,
+                        fontSize: theme.typeScale.captionStrong.fontSize,
+                      },
+                    ]}
+                  >
+                    {t(language, "heroPrimaryCta")}
+                  </Text>
+                </PressableScale>
+              </Hint>
+
+              <Hint hint={t(language, "hintQuickFill")} label={t(language, "heroSecondaryCta")}>
+                <PressableScale
+                  onPress={handleTrySampleForm}
+                  accessibilityRole="button"
+                  accessibilityLabel={t(language, "heroSecondaryCta")}
+                  style={[
+                    styles.ghostPill,
+                    {
+                      backgroundColor: colors.surfaceAlt,
+                      borderColor: colors.separator,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.ghostPillText,
+                      {
+                        color: colors.text,
+                        fontSize: theme.typeScale.captionStrong.fontSize,
+                      },
+                    ]}
+                  >
+                    {t(language, "heroSecondaryCta")}
+                  </Text>
+                </PressableScale>
+              </Hint>
+            </View>
+          </View>
+        </View>
+      </FadeInUp>
+
+      {documentsLoading && documents.length === 0 ? (
+        <Shimmer height={160} borderRadius={20} style={styles.stackSpacer} />
+      ) : frontDoc && frontPalette ? (
+        <FadeInUp index={2}>
           <View style={styles.stackContainer}>
             <PressableScale
               onPress={() => openDocument((thirdDoc ?? frontDoc).id)}
@@ -193,38 +371,15 @@ export default function HomeScreen() {
               </PressableScale>
             </Hint>
           </View>
-        ) : (
-          <Hint hint={t(language, "hintQuickScan")} label={t(language, "scan")}>
-            <PressableScale
-              onPress={() => router.push("/scan/camera")}
-              accessibilityRole="button"
-              accessibilityLabel={`${t(language, "noDocuments")}, ${t(language, "scan")}`}
-              style={[
-                styles.emptyStackCard,
-                { backgroundColor: colors.surface, borderColor: colors.separator },
-              ]}
-            >
-              <EmptyStateIllustration />
-              <View style={styles.emptyStackText}>
-                <Text style={[styles.emptyStackTitle, { color: colors.text, fontSize: theme.typeScale.bodyStrong.fontSize }]}>
-                  {t(language, "noDocuments")}
-                </Text>
-                <Text style={[styles.emptyStackSub, { color: colors.secondaryText, fontSize: theme.typeScale.caption.fontSize }]}>
-                  {t(language, "scanFirst")}
-                </Text>
-              </View>
-              <ChevronRight size={20} color={colors.primary} />
-            </PressableScale>
-          </Hint>
-        )}
-      </FadeInUp>
+        </FadeInUp>
+      ) : null}
 
       <View style={styles.gridWrap}>
         <View style={styles.gridRow}>
-          <FadeInUp index={2} style={styles.gridCol}>
+          <FadeInUp index={3} style={styles.gridCol}>
             <Hint hint={t(language, "hintQuickScan")} label={t(language, "scan")}>
               <PressableScale
-                onPress={() => router.push("/scan/camera")}
+                onPress={handleScanDocument}
                 accessibilityRole="button"
                 accessibilityLabel={t(language, "scan")}
                 style={[
@@ -242,7 +397,7 @@ export default function HomeScreen() {
             </Hint>
           </FadeInUp>
 
-          <FadeInUp index={3} style={styles.gridCol}>
+          <FadeInUp index={4} style={styles.gridCol}>
             <Hint hint={t(language, "hintQuickFill")} label={t(language, "fill")}>
               <PressableScale
                 onPress={() => router.push("/(tabs)/forms")}
@@ -265,7 +420,7 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.gridRow}>
-          <FadeInUp index={4} style={styles.gridCol}>
+          <FadeInUp index={5} style={styles.gridCol}>
             <Hint hint={t(language, "hintQuickWallet")} label={t(language, "locker")}>
               <PressableScale
                 onPress={() => router.push("/(tabs)/documents")}
@@ -286,7 +441,7 @@ export default function HomeScreen() {
             </Hint>
           </FadeInUp>
 
-          <FadeInUp index={5} style={styles.gridCol}>
+          <FadeInUp index={6} style={styles.gridCol}>
             <Hint hint={t(language, "hintQuickAi")} label={t(language, "aiAssistant")}>
               <PressableScale
                 onPress={() => openComingSoon(t(language, "aiAssistant"))}
@@ -312,7 +467,7 @@ export default function HomeScreen() {
       </View>
 
       {interactionMode === "speak" ? (
-        <FadeInUp index={6}>
+        <FadeInUp index={7}>
           <Hint hint={t(language, "listenToday")} label={t(language, "listenToday")}>
             <PressableScale
               onPress={sayWelcome}
@@ -328,6 +483,8 @@ export default function HomeScreen() {
           </Hint>
         </FadeInUp>
       ) : null}
+
+      <WatermarkFooter />
     </BodhiniScreen>
   );
 }
@@ -341,12 +498,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 16,
+    gap: 12,
   },
-  brand: {
-    fontWeight: "700",
-    letterSpacing: -0.4,
+  headerLeft: {
+    flex: 1,
   },
-  avatarHit: {
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  headerIconHit: {
     width: 48,
     height: 48,
     borderRadius: 24,
@@ -355,8 +517,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   greetingBlock: {
-    marginBottom: 20,
-    gap: 2,
+    marginBottom: 16,
+    gap: 4,
   },
   greetingLead: {
     fontWeight: "500",
@@ -365,40 +527,128 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: -0.4,
   },
-  greetingSub: {
-    marginTop: 4,
+  heroArea: {
+    marginBottom: 24,
+    paddingBottom: 24,
+    position: "relative",
+  },
+  heroLandscapeWrap: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    aspectRatio: 16 / 7,
+    borderRadius: 28,
+    overflow: "hidden",
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  heroLandscapeImage: {
+    width: "100%",
+    height: "100%",
+  },
+  heroLandscapeOverlay: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  },
+  heroCard: {
+    borderRadius: 28,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 24,
+    gap: 16,
+  },
+  heroCardHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  heroTextCol: {
+    flex: 1,
+    gap: 8,
+  },
+  heroHeadline: {
+    fontWeight: "700",
+    letterSpacing: -0.3,
+  },
+  heroSupporting: {
+    fontWeight: "400",
+  },
+  heroMarkCardWrap: {
+    paddingTop: 4,
+  },
+  heroMarkCard: {
+    width: 56,
+    height: 68,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  heroPillsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 12,
+  },
+  primaryPill: {
+    minHeight: 48,
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  primaryPillText: {
+    fontWeight: "600",
+  },
+  ghostPill: {
+    minHeight: 48,
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ghostPillText: {
+    fontWeight: "600",
   },
   stackSpacer: {
     marginBottom: 24,
   },
   stackContainer: {
     height: 184,
-    marginBottom: 20,
+    marginBottom: 24,
     position: "relative",
   },
   stackCardBack: {
     position: "absolute",
     top: 0,
-    left: 28,
+    left: 24,
     right: 0,
-    height: 140,
+    height: 136,
     borderRadius: 20,
   },
   stackCardMid: {
     position: "absolute",
     top: 12,
-    left: 14,
-    right: 10,
-    height: 146,
+    left: 12,
+    right: 12,
+    height: 144,
     borderRadius: 20,
   },
   stackCardFront: {
     marginTop: 24,
-    marginRight: 20,
+    marginRight: 24,
     minHeight: 156,
     borderRadius: 20,
-    paddingHorizontal: 20,
-    paddingVertical: 18,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
     justifyContent: "space-between",
   },
   cardTopIcon: {
@@ -413,7 +663,7 @@ const styles = StyleSheet.create({
   },
   cardTitleGroup: {
     flex: 1,
-    gap: 6,
+    gap: 4,
   },
   cardTitle: {
     fontWeight: "600",
@@ -421,26 +671,6 @@ const styles = StyleSheet.create({
   cardNumber: {
     fontWeight: "500",
     letterSpacing: 0.6,
-  },
-  emptyStackCard: {
-    minHeight: 132,
-    borderRadius: 20,
-    borderWidth: StyleSheet.hairlineWidth,
-    padding: 18,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    marginBottom: 20,
-  },
-  emptyStackText: {
-    flex: 1,
-    gap: 4,
-  },
-  emptyStackTitle: {
-    fontWeight: "600",
-  },
-  emptyStackSub: {
-    lineHeight: 18,
   },
   gridWrap: {
     gap: 12,
@@ -467,7 +697,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   quickTextGroup: {
-    gap: 2,
+    gap: 4,
   },
   quickLabel: {
     fontWeight: "600",

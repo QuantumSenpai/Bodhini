@@ -2,11 +2,22 @@ import React, { useCallback, useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import type { AppLanguage } from "../domain/document/document.types";
-import { BodhiniLogoMark, BodhiniScreen, PrimaryButton } from "../components/ui/BodhiniUI";
+import {
+  BodhiniScreen,
+  BrandBlock,
+  PrimaryButton,
+  WatermarkFooter,
+} from "../components/ui/BodhiniUI";
 import { useBodhini } from "../state/AppContext";
 import { t } from "../i18n/translations";
 import { useTheme } from "../theme/ThemeProvider";
-import { FadeInUp, Hint, PressableScale, PulseDot } from "../components/motion";
+import {
+  FadeInUp,
+  HeroFloatCard,
+  Hint,
+  PressableScale,
+  PulseDot,
+} from "../components/motion";
 
 const languagePills: { code: AppLanguage; label: string }[] = [
   { code: "en", label: "English" },
@@ -43,13 +54,7 @@ export default function WelcomeScreen() {
     return (
       <BodhiniScreen scroll={false} contentStyle={styles.splashContainer}>
         <View style={styles.splashCenter}>
-          <BodhiniLogoMark size={60} />
-          <Text style={[styles.splashBrand, { color: colors.text, fontSize: theme.typeScale.largeTitle.fontSize }]}>
-            {t(language, "brandName")}
-          </Text>
-          <Text style={[styles.splashSub, { color: colors.secondaryText, fontSize: theme.typeScale.caption.fontSize }]}>
-            {t(language, "brandCompanion")}
-          </Text>
+          <BrandBlock variant="welcome" />
           <PulseDot color={colors.primary} size={8} style={styles.splashPulse} />
         </View>
       </BodhiniScreen>
@@ -66,12 +71,7 @@ export default function WelcomeScreen() {
   return (
     <BodhiniScreen scroll={true} contentStyle={styles.page}>
       <View style={styles.topHeader}>
-        <View style={styles.topBrand}>
-          <BodhiniLogoMark size={32} />
-          <Text style={[styles.topBrandText, { color: colors.text, fontSize: theme.typeScale.bodyStrong.fontSize }]}>
-            {t(language, "brandName")}
-          </Text>
-        </View>
+        <View style={styles.headerSpacer} />
         <Hint hint={t(language, "hintSkipOnboarding")} label={t(language, "skip")}>
           <PressableScale
             onPress={handleSkip}
@@ -84,6 +84,10 @@ export default function WelcomeScreen() {
             </Text>
           </PressableScale>
         </Hint>
+      </View>
+
+      <View style={styles.brandSection}>
+        <BrandBlock variant="welcome" />
       </View>
 
       <View style={styles.illustrationArea}>
@@ -100,16 +104,18 @@ export default function WelcomeScreen() {
               { backgroundColor: colors.forestLight, borderColor: colors.separator },
             ]}
           />
-          <View
-            style={[
-              styles.fanCardFront,
-              { backgroundColor: colors.surface, borderColor: colors.primary },
-            ]}
-          >
-            <View style={[styles.docLineShort, { backgroundColor: colors.primary }]} />
-            <View style={[styles.docLineFull, { backgroundColor: colors.primary }]} />
-            <View style={[styles.docLineMid, { backgroundColor: colors.primary }]} />
-          </View>
+          <HeroFloatCard>
+            <View
+              style={[
+                styles.fanCardFront,
+                { backgroundColor: colors.surface, borderColor: colors.primary },
+              ]}
+            >
+              <View style={[styles.docLineShort, { backgroundColor: colors.primary }]} />
+              <View style={[styles.docLineFull, { backgroundColor: colors.primary }]} />
+              <View style={[styles.docLineMid, { backgroundColor: colors.primary }]} />
+            </View>
+          </HeroFloatCard>
         </View>
       </View>
 
@@ -193,7 +199,7 @@ export default function WelcomeScreen() {
                 style={[
                   styles.dot,
                   {
-                    width: active ? 22 : 8,
+                    width: active ? 24 : 8,
                     backgroundColor: active ? colors.primary : colors.separator,
                   },
                 ]}
@@ -221,6 +227,7 @@ export default function WelcomeScreen() {
             </Text>
           </PressableScale>
         ) : null}
+        <WatermarkFooter />
       </View>
     </BodhiniScreen>
   );
@@ -234,18 +241,8 @@ const styles = StyleSheet.create({
   },
   splashCenter: {
     alignItems: "center",
-    gap: 12,
+    gap: 16,
     paddingHorizontal: 32,
-  },
-  splashBrand: {
-    fontWeight: "700",
-    marginTop: 8,
-    letterSpacing: -0.6,
-  },
-  splashSub: {
-    textAlign: "center",
-    maxWidth: 220,
-    lineHeight: 20,
   },
   splashPulse: {
     marginTop: 16,
@@ -259,13 +256,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  topBrand: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  topBrandText: {
-    fontWeight: "700",
+  headerSpacer: {
+    width: 48,
+    height: 48,
   },
   skipButton: {
     minWidth: 48,
@@ -277,14 +270,19 @@ const styles = StyleSheet.create({
   skipText: {
     fontWeight: "500",
   },
+  brandSection: {
+    alignItems: "center",
+    marginTop: 4,
+    marginBottom: 8,
+  },
   illustrationArea: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 24,
+    paddingVertical: 16,
   },
   cardFanWrap: {
-    width: 180,
-    height: 170,
+    width: 176,
+    height: 160,
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
@@ -293,46 +291,46 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: 104,
     height: 128,
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 2,
-    transform: [{ rotate: "-16deg" }, { translateX: -22 }, { translateY: 4 }],
+    transform: [{ rotate: "-16deg" }, { translateX: -24 }, { translateY: 4 }],
   },
   fanCardMid: {
     position: "absolute",
     width: 104,
     height: 128,
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 1.5,
-    transform: [{ rotate: "-5deg" }, { translateX: -6 }, { translateY: -4 }],
+    transform: [{ rotate: "-5deg" }, { translateX: -8 }, { translateY: -4 }],
   },
   fanCardFront: {
     width: 108,
     height: 132,
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 2.5,
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
     paddingVertical: 24,
     justifyContent: "center",
     gap: 12,
-    transform: [{ rotate: "6deg" }, { translateX: 12 }, { translateY: 2 }],
+    transform: [{ rotate: "6deg" }, { translateX: 12 }, { translateY: 4 }],
   },
   docLineShort: {
-    width: 36,
-    height: 6,
-    borderRadius: 3,
+    width: 32,
+    height: 8,
+    borderRadius: 4,
   },
   docLineFull: {
     width: "100%",
-    height: 6,
-    borderRadius: 3,
+    height: 8,
+    borderRadius: 4,
   },
   docLineMid: {
     width: "75%",
-    height: 6,
-    borderRadius: 3,
+    height: 8,
+    borderRadius: 4,
   },
   textBlock: {
-    gap: 10,
+    gap: 8,
     paddingHorizontal: 4,
   },
   slideTitle: {
@@ -340,7 +338,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.4,
   },
   slideBody: {
-    marginTop: 2,
+    marginTop: 4,
   },
   languageBar: {
     flexDirection: "row",

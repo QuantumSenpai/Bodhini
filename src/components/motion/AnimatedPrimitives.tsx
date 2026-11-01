@@ -273,6 +273,70 @@ export function EmptyStateIllustration({ style }: { style?: StyleProp<ViewStyle>
   );
 }
 
+export function MarkEntrance({
+  children,
+  style,
+}: {
+  children: React.ReactNode;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const { reduceMotion } = useBodhini();
+  const opacity = useSharedValue(reduceMotion ? 1 : 0);
+  const scale = useSharedValue(reduceMotion ? 1 : 0.92);
+
+  useEffect(() => {
+    if (reduceMotion) {
+      opacity.value = 1;
+      scale.value = 1;
+      return;
+    }
+    opacity.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.cubic) });
+    scale.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.cubic) });
+  }, [opacity, reduceMotion, scale]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ scale: scale.value }],
+  }));
+
+  return <Animated.View style={[style, animatedStyle]}>{children}</Animated.View>;
+}
+
+export function HeroFloatCard({
+  children,
+  style,
+}: {
+  children: React.ReactNode;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const { reduceMotion } = useBodhini();
+  const isFocused = useScreenFocused();
+  const translateY = useSharedValue(0);
+
+  useEffect(() => {
+    if (!isFocused || reduceMotion) {
+      cancelAnimation(translateY);
+      translateY.value = 0;
+      return;
+    }
+    translateY.value = 0;
+    translateY.value = withRepeat(
+      withTiming(-6, { duration: 3500, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      true,
+    );
+    return () => {
+      cancelAnimation(translateY);
+    };
+  }, [isFocused, reduceMotion, translateY]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  return <Animated.View style={[style, animatedStyle]}>{children}</Animated.View>;
+}
+
 const styles = StyleSheet.create({
   scanLine: {
     position: "absolute",
