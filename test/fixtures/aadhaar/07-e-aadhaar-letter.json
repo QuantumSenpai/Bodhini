@@ -1,0 +1,27 @@
+{
+  "name": "e-Aadhaar letter with VID and enrolment number",
+  "rows": [
+    { "text": "To,", "left": 10, "top": 10, "right": 50, "bottom": 30, "script": "latin" },
+    { "text": "RAMESH KUMAR SHARMA", "left": 10, "top": 50, "right": 200, "bottom": 70, "script": "latin" },
+    { "text": "S/O SHYAM LAL SHARMA", "left": 10, "top": 90, "right": 220, "bottom": 110, "script": "latin" },
+    { "text": "VILLAGE RAMPUR POST OFFICE", "left": 10, "top": 130, "right": 240, "bottom": 150, "script": "latin" },
+    { "text": "DISTRICT GHAZIABAD", "left": 10, "top": 170, "right": 180, "bottom": 190, "script": "latin" },
+    { "text": "UTTAR PRADESH 201001", "left": 10, "top": 210, "right": 190, "bottom": 230, "script": "latin" },
+    { "text": "Mobile: 9876543210", "left": 10, "top": 250, "right": 170, "bottom": 270, "script": "latin" },
+    { "text": "Enrolment No: 1234/56789/12345", "left": 10, "top": 290, "right": 220, "bottom": 310, "script": "latin" },
+    { "text": "VID: 1234 5678 9012 3456", "left": 10, "top": 330, "right": 190, "bottom": 350, "script": "latin" },
+    { "text": "Your Aadhaar No: 2918 3746 5026", "left": 10, "top": 370, "right": 250, "bottom": 390, "script": "latin" },
+    { "text": "Address:", "left": 10, "top": 410, "right": 80, "bottom": 430, "script": "latin" },
+    { "text": "S/O SHYAM LAL SHARMA", "left": 10, "top": 450, "right": 220, "bottom": 470, "script": "latin" },
+    { "text": "VILLAGE RAMPUR POST OFFICE", "left": 10, "top": 490, "right": 240, "bottom": 510, "script": "latin" },
+    { "text": "DISTRICT GHAZIABAD", "left": 10, "top": 530, "right": 180, "bottom": 550, "script": "latin" },
+    { "text": "UTTAR PRADESH 201001", "left": 10, "top": 570, "right": 190, "bottom": 590, "script": "latin" }
+  ],
+  "expected": {
+    "FULL_NAME": "RAMESH KUMAR SHARMA",
+    "FATHER_NAME": "SHYAM LAL SHARMA",
+    "ADDRESS": "S/O SHYAM LAL SHARMA, VILLAGE RAMPUR POST OFFICE, DISTRICT GHAZIABAD, UTTAR PRADESH 201001",
+    "PIN_CODE": "201001",
+    "AADHAAR_NO": "291837465026"
+  }
+}

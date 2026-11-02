@@ -9,6 +9,7 @@ import { services } from "../composition/services";
 export type InteractionMode = "speak" | "type";
 export type ThemeMode = "system" | "light" | "dark";
 export type TextSize = 1 | 1.15 | 1.3;
+export type DebugOcr = boolean;
 
 export interface HintBubbleInfo {
   text: string;
@@ -33,6 +34,7 @@ interface AppContextValue {
   textSize: TextSize;
   reduceMotion: boolean;
   userReduceMotion: boolean;
+  debugOcr: boolean;
   pendingDocument: PendingDocumentReview | null;
   documents: DocumentRecord[];
   documentsLoading: boolean;
@@ -47,6 +49,7 @@ interface AppContextValue {
   setProfileName: (name: string) => Promise<void>;
   setTextSize: (size: TextSize) => Promise<void>;
   setReduceMotion: (enabled: boolean) => Promise<void>;
+  setDebugOcr: (enabled: boolean) => Promise<void>;
   completeOnboarding: () => Promise<void>;
   clearAllData: () => Promise<void>;
   setPendingDocument: React.Dispatch<React.SetStateAction<PendingDocumentReview | null>>;
@@ -96,6 +99,7 @@ export function AppProvider({ children }: React.PropsWithChildren) {
   const [textSize, setTextSizeState] = useState<TextSize>(1);
   const [userReduceMotion, setUserReduceMotionState] = useState(false);
   const [systemReduceMotion, setSystemReduceMotion] = useState(false);
+  const [debugOcr, setDebugOcrState] = useState(false);
   const [pendingDocument, setPendingDocument] = useState<PendingDocumentReview | null>(null);
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [documentsLoading, setDocumentsLoading] = useState(false);
@@ -137,7 +141,7 @@ export function AppProvider({ children }: React.PropsWithChildren) {
     let active = true;
     (async () => {
       try {
-        const [savedLanguage, savedMode, savedTheme, completed, savedName, savedSize, savedMotion] = await Promise.all([
+        const [savedLanguage, savedMode, savedTheme, completed, savedName, savedSize, savedMotion, savedDebugOcr] = await Promise.all([
           readPreference("language"),
           readPreference("interactionMode"),
           readPreference("themeMode"),
@@ -145,6 +149,7 @@ export function AppProvider({ children }: React.PropsWithChildren) {
           readPreference("profileName"),
           readPreference("textSize"),
           readPreference("reduceMotion"),
+          readPreference("debugOcr"),
         ]);
         if (!active) return;
         if (savedLanguage === "en" || savedLanguage === "bn" || savedLanguage === "hi") setLanguageState(savedLanguage);
@@ -153,6 +158,7 @@ export function AppProvider({ children }: React.PropsWithChildren) {
         if (typeof savedName === "string") setProfileNameState(savedName);
         if (savedSize === "1" || savedSize === "1.15" || savedSize === "1.3") setTextSizeState(Number(savedSize) as TextSize);
         if (savedMotion === "true" || savedMotion === "false") setUserReduceMotionState(savedMotion === "true");
+        if (savedDebugOcr === "true" || savedDebugOcr === "false") setDebugOcrState(savedDebugOcr === "true");
         setOnboardingComplete(completed === "true");
       } catch {
       } finally {
@@ -197,6 +203,11 @@ export function AppProvider({ children }: React.PropsWithChildren) {
   const setReduceMotion = useCallback(async (value: boolean) => {
     setUserReduceMotionState(value);
     await writePreference("reduceMotion", value ? "true" : "false");
+  }, []);
+
+  const setDebugOcr = useCallback(async (value: boolean) => {
+    setDebugOcrState(value);
+    await writePreference("debugOcr", value ? "true" : "false");
   }, []);
 
   const completeOnboarding = useCallback(async () => {
@@ -279,6 +290,7 @@ export function AppProvider({ children }: React.PropsWithChildren) {
     textSize,
     reduceMotion,
     userReduceMotion,
+    debugOcr,
     pendingDocument,
     documents,
     documentsLoading,
@@ -293,6 +305,7 @@ export function AppProvider({ children }: React.PropsWithChildren) {
     setProfileName,
     setTextSize,
     setReduceMotion,
+    setDebugOcr,
     completeOnboarding,
     clearAllData,
     setPendingDocument,
@@ -315,6 +328,7 @@ export function AppProvider({ children }: React.PropsWithChildren) {
     textSize,
     reduceMotion,
     userReduceMotion,
+    debugOcr,
     pendingDocument,
     documents,
     documentsLoading,
@@ -329,6 +343,7 @@ export function AppProvider({ children }: React.PropsWithChildren) {
     setProfileName,
     setTextSize,
     setReduceMotion,
+    setDebugOcr,
     completeOnboarding,
     clearAllData,
     refreshDocuments,

@@ -1,0 +1,14 @@
+{
+  "name": "name and DOB merged in one block",
+  "rows": [
+    { "text": "RAMESH KUMAR SHARMA DOB: 15/08/1985", "left": 10, "top": 50, "right": 300, "bottom": 80, "script": "latin" },
+    { "text": "MALE", "left": 10, "top": 110, "right": 80, "bottom": 130, "script": "latin" },
+    { "text": "2918 3746 5026", "left": 10, "top": 150, "right": 180, "bottom": 170, "script": "latin" }
+  ],
+  "expected": {
+    "FULL_NAME": "RAMESH KUMAR SHARMA",
+    "DOB": "15/08/1985",
+    "GENDER": "MALE",
+    "AADHAAR_NO": "291837465026"
+  }
+}

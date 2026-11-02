@@ -1,0 +1,17 @@
+{
+  "name": "front with Devanagari garbage line above name",
+  "rows": [
+    { "text": "सरकार ऑफ इंडिया", "left": 10, "top": 10, "right": 200, "bottom": 30, "script": "devanagari" },
+    { "text": "GOVT OF INDIA UIDAI", "left": 10, "top": 50, "right": 180, "bottom": 70, "script": "latin" },
+    { "text": "RAMESH KUMAR SHARMA", "left": 10, "top": 90, "right": 200, "bottom": 110, "script": "latin" },
+    { "text": "DOB: 15/08/1985", "left": 10, "top": 130, "right": 150, "bottom": 150, "script": "latin" },
+    { "text": "MALE", "left": 10, "top": 170, "right": 80, "bottom": 190, "script": "latin" },
+    { "text": "2918 3746 5026", "left": 10, "top": 210, "right": 180, "bottom": 230, "script": "latin" }
+  ],
+  "expected": {
+    "FULL_NAME": "RAMESH KUMAR SHARMA",
+    "DOB": "15/08/1985",
+    "GENDER": "MALE",
+    "AADHAAR_NO": "291837465026"
+  }
+}

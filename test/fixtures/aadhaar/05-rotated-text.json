@@ -1,0 +1,16 @@
+{
+  "name": "front with rotated text",
+  "rows": [
+    { "text": "सरकार ऑफ इंडिया", "left": 10, "top": 10, "right": 200, "bottom": 30, "script": "devanagari" },
+    { "text": "RAMESH KUMAR SHARMA", "left": 10, "top": 55, "right": 200, "bottom": 75, "script": "latin" },
+    { "text": "DOB: 15/08/1985", "left": 10, "top": 95, "right": 150, "bottom": 115, "script": "latin" },
+    { "text": "MALE", "left": 10, "top": 135, "right": 80, "bottom": 155, "script": "latin" },
+    { "text": "2918 3746 5026", "left": 10, "top": 175, "right": 180, "bottom": 195, "script": "latin" }
+  ],
+  "expected": {
+    "FULL_NAME": "RAMESH KUMAR SHARMA",
+    "DOB": "15/08/1985",
+    "GENDER": "MALE",
+    "AADHAAR_NO": "291837465026"
+  }
+}

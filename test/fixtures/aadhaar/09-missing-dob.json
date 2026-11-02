@@ -1,0 +1,14 @@
+{
+  "name": "missing DOB",
+  "rows": [
+    { "text": "RAMESH KUMAR", "left": 10, "top": 50, "right": 150, "bottom": 70, "script": "latin" },
+    { "text": "MALE", "left": 10, "top": 90, "right": 80, "bottom": 110, "script": "latin" },
+    { "text": "2918 3746 5026", "left": 10, "top": 130, "right": 180, "bottom": 150, "script": "latin" }
+  ],
+  "expected": {
+    "FULL_NAME": "RAMESH KUMAR",
+    "GENDER": "MALE",
+    "AADHAAR_NO": "291837465026",
+    "DOB": null
+  }
+}

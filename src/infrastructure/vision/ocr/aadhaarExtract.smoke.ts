@@ -1,10 +1,8 @@
 import { extractAadhaarFields } from "./aadhaarExtract";
 import { isValidAadhaar } from "../../validation/verhoeff";
 import { resolveFieldKey } from "../../matching/field-synonyms";
-
-function makeBlock(text: string, x: number, y: number, w: number, h: number) {
-  return { text, box: { x, y, width: w, height: h } };
-}
+import * as fs from "node:fs";
+import * as path from "node:path";
 
 function testCase(name: string, fn: () => boolean): boolean {
   try {
@@ -22,6 +20,29 @@ let failCount = 0;
 
 function run(name: string, fn: () => boolean) {
   if (testCase(name, fn)) passCount++; else failCount++;
+}
+
+function makeBlock(text: string, x: number, y: number, w: number, h: number) {
+  return { text, box: { x, y, width: w, height: h } };
+}
+
+function rowsFromFixture(fixture: any) {
+  return fixture.rows.map((r: any) => ({
+    text: r.text,
+    box: { x: r.left, y: r.top, width: r.right - r.left, height: r.bottom - r.top },
+    lines: [
+      {
+        text: r.text,
+        box: { x: r.left, y: r.top, width: r.right - r.left, height: r.bottom - r.top },
+        elements: [
+          {
+            text: r.text,
+            box: { x: r.left, y: r.top, width: r.right - r.left, height: r.bottom - r.top },
+          },
+        ],
+      },
+    ],
+  }));
 }
 
 const pvcFrontText = `सरकार ऑफ इंडिया
@@ -220,6 +241,31 @@ run("PVC front: no ADDRESS extracted", () => {
   const address = fields.find(f => f.key === "ADDRESS");
   return !address;
 });
+
+const fixtureDir = path.join(__dirname, "../../../../test/fixtures/aadhaar");
+const fixtureFiles = fs.readdirSync(fixtureDir).filter((f) => f.endsWith(".json")).sort();
+
+for (const file of fixtureFiles) {
+  const fixture = JSON.parse(fs.readFileSync(path.join(fixtureDir, file), "utf8"));
+  const blocks = rowsFromFixture(fixture);
+  const text = fixture.rows.map((r: any) => r.text).join("\n");
+
+  run(`Fixture: ${fixture.name}`, () => {
+    const fields = extractAadhaarFields(text, blocks);
+    const fieldMap = new Map();
+    for (const f of fields) fieldMap.set(f.key, f);
+
+    for (const [key, expectedValue] of Object.entries(fixture.expected)) {
+      const field = fieldMap.get(key);
+      if (expectedValue === null) {
+        if (field) return false;
+      } else {
+        if (!field || field.value !== expectedValue) return false;
+      }
+    }
+    return true;
+  });
+}
 
 console.log(`\nPASS: ${passCount}, FAIL: ${failCount}`);
 if (failCount > 0) process.exit(1);

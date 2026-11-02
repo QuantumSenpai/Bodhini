@@ -2,6 +2,17 @@ export type AppLanguage = "en" | "bn" | "hi";
 
 export type ExtractionSource = "OCR" | "GEMMA" | "DEMO";
 
+export type Script = "latin" | "devanagari" | "bengali" | "mixed";
+
+export interface OcrRow {
+  text: string;
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+  script: Script;
+}
+
 export type DocumentType =
   | "AADHAAR"
   | "PAN"
@@ -39,6 +50,7 @@ export interface DocumentAnalysis {
   fields: ExtractedField[];
   source: ExtractionSource;
   warnings: string[];
+  rows?: OcrRow[];
 }
 
 export interface DocumentRecord {

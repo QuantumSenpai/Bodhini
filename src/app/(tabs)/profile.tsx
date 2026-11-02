@@ -50,6 +50,8 @@ export default function ProfileScreen() {
     setTextSize,
     userReduceMotion,
     setReduceMotion,
+    debugOcr,
+    setDebugOcr,
     clearAllData,
     openComingSoon,
     showToast,
@@ -266,6 +268,26 @@ export default function ProfileScreen() {
   }
 
   if (subView === "about") {
+    const [versionTapCount, setVersionTapCount] = useState(0);
+    const [lastTapTime, setLastTapTime] = useState(0);
+
+    const handleVersionPress = () => {
+      const now = Date.now();
+      if (now - lastTapTime < 4000) {
+        setVersionTapCount((c) => c + 1);
+      } else {
+        setVersionTapCount(1);
+      }
+      setLastTapTime(now);
+
+      if (versionTapCount + 1 >= 7) {
+        setVersionTapCount(0);
+        const newVal = !debugOcr;
+        setDebugOcr(newVal).catch(() => undefined);
+        showToast(newVal ? t(language, "debugOcrEnabled") : t(language, "debugOcrDisabled"));
+      }
+    };
+
     return (
       <BodhiniScreen inTabs contentStyle={styles.page}>
         <TopBar title={t(language, "about")} onBack={() => setSubView("main")} />
@@ -280,6 +302,16 @@ export default function ProfileScreen() {
           <Text style={[styles.aboutVersion, { color: colors.secondaryText, fontSize: theme.typeScale.caption.fontSize }]}>
             {t(language, "versionLabel")}
           </Text>
+          <PressableScale
+            onPress={handleVersionPress}
+            accessibilityRole="button"
+            accessibilityLabel={t(language, "debugOcrLabel")}
+            style={styles.versionRow}
+          >
+            <Text style={[styles.versionRowText, { color: colors.secondaryText, fontSize: theme.typeScale.caption.fontSize }]}>
+              {t(language, "debugOcrLabel")}
+            </Text>
+          </PressableScale>
         </View>
       </BodhiniScreen>
     );
@@ -624,5 +656,17 @@ const styles = StyleSheet.create({
   aboutVersion: {
     textAlign: "center",
     marginTop: 4,
+  },
+  versionRow: {
+    minHeight: 48,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 8,
+  },
+  versionRowText: {
+    fontWeight: "500",
   },
 });

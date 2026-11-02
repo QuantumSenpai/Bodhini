@@ -1,0 +1,16 @@
+{
+  "name": "name in ALL CAPS",
+  "rows": [
+    { "text": "सरकार ऑफ इंडिया", "left": 10, "top": 10, "right": 200, "bottom": 30, "script": "devanagari" },
+    { "text": "PRIYA SHARMA", "left": 10, "top": 50, "right": 150, "bottom": 70, "script": "latin" },
+    { "text": "DOB: 22/03/2010", "left": 10, "top": 90, "right": 150, "bottom": 110, "script": "latin" },
+    { "text": "FEMALE", "left": 10, "top": 130, "right": 100, "bottom": 150, "script": "latin" },
+    { "text": "2918 3746 5026", "left": 10, "top": 170, "right": 180, "bottom": 190, "script": "latin" }
+  ],
+  "expected": {
+    "FULL_NAME": "PRIYA SHARMA",
+    "DOB": "22/03/2010",
+    "GENDER": "FEMALE",
+    "AADHAAR_NO": "291837465026"
+  }
+}

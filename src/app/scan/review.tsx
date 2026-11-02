@@ -12,6 +12,8 @@ import {
   VoicePromptButton,
 } from "../../components/ui/BodhiniUI";
 import { useBodhini } from "../../state/AppContext";
+import { redactForDebug } from "../../infrastructure/vision/ocr/redact";
+import type { OcrRow } from "../../infrastructure/vision/ocr/ocr.types";
 import { services } from "../../composition/services";
 import type { DocumentRecord, ExtractedField, FieldKey } from "../../domain/document/document.types";
 import { FieldValidator } from "../../infrastructure/validation/field-validator";
@@ -45,7 +47,7 @@ const standardCoreKeys: FieldKey[] = [
 
 export default function ScanReviewScreen() {
   const router = useRouter();
-  const { pendingDocument, setPendingDocument, refreshDocuments, language, showToast } = useBodhini();
+  const { pendingDocument, setPendingDocument, refreshDocuments, language, showToast, debugOcr } = useBodhini();
   const { colors, theme } = useTheme();
   const [fields, setFields] = useState<ExtractedField[]>(pendingDocument?.analysis.fields ?? []);
   const [saving, setSaving] = useState(false);
@@ -296,6 +298,35 @@ export default function ScanReviewScreen() {
         </View>
       ) : null}
 
+      {debugOcr && pendingDocument?.analysis?.rows ? (
+        <View style={[styles.debugOcrPanel, { backgroundColor: colors.surfaceAlt, borderColor: colors.separator }]}>
+          <Text style={[styles.debugOcrTitle, { color: colors.text, fontSize: theme.typeScale.captionStrong.fontSize }]}>
+            {t(language, "debugOcrLabel")}
+          </Text>
+          <View style={styles.debugOcrRows}>
+            {pendingDocument.analysis.rows.map((row: OcrRow, idx: number) => (
+              <Text key={idx} style={[styles.debugOcrRow, { color: colors.secondaryText, fontSize: theme.typeScale.caption.fontSize }]}>
+                [{row.script}] {redactForDebug(row.text)}
+              </Text>
+            ))}
+          </View>
+          <PressableScale
+            onPress={() => {
+              const text = pendingDocument.analysis.rows!.map((r: OcrRow) => `[${r.script}] ${redactForDebug(r.text)}`).join("\n");
+              import("expo-clipboard").then((mod) => mod.setStringAsync(text)).catch(() => undefined);
+              showToast(t(language, "copied"));
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t(language, "copyAnswer")}
+            style={[styles.debugOcrCopyBtn, { backgroundColor: colors.forestLight }]}
+          >
+            <Text style={[styles.debugOcrCopyText, { color: colors.forest, fontSize: theme.typeScale.label.fontSize }]}>
+              {t(language, "copyAnswer")}
+            </Text>
+          </PressableScale>
+        </View>
+      ) : null}
+
       <PrimaryButton
         title={t(language, "save")}
         onPress={saveDocument}
@@ -424,5 +455,32 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     marginTop: 20,
+  },
+  debugOcrPanel: {
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 16,
+    marginTop: 16,
+    gap: 12,
+  },
+  debugOcrTitle: {
+    fontWeight: "600",
+  },
+  debugOcrRows: {
+    gap: 6,
+    maxHeight: 200,
+  },
+  debugOcrRow: {
+    fontFamily: "monospace",
+  },
+  debugOcrCopyBtn: {
+    minHeight: 48,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  debugOcrCopyText: {
+    fontWeight: "600",
   },
 });
