@@ -56,8 +56,9 @@
     "typecheck": "tsc --noEmit",
     "check:style": "node scripts/check-style.cjs",
     "test:backend": "npx tsx test/backend-b.synthetic.test.ts",
-    "check": "npm run typecheck && npm run check:style && npm run test:backend",
-    "test": "npx tsx --test test/backend-b.synthetic.test.ts"
+    "check": "npm run typecheck && npm run check:style && npm run test:backend && npm run test:smoke",
+    "test": "npx tsx --test test/backend-b.synthetic.test.ts",
+    "test:smoke": "npx tsx src/infrastructure/vision/ocr/aadhaarExtract.smoke.ts && npx tsx src/infrastructure/vision/ocr/classifier.smoke.ts && npx tsx src/infrastructure/vision/ocr/lineBuilder.smoke.ts && npx tsx src/infrastructure/vision/ocr/redact.smoke.ts && npx tsx src/infrastructure/validation/validation.smoke.ts"
   },
   "private": true
 }
