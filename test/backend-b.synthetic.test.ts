@@ -1,4 +1,5 @@
 /// <reference types="node" />
+
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
@@ -20,11 +21,6 @@ import { FieldValidator } from "../src/infrastructure/validation/field-validator
 import { FieldMatcher } from "../src/infrastructure/matching/field-matcher";
 import { CopyListBuilder } from "../src/infrastructure/export/copy-list-builder";
 
-/**
- * Adapter implementing ISQLiteDatabase backed by Node 24's native DatabaseSync.
- * This runs against the exact SQLite C-engine to test real SQL queries,
- * foreign keys, transactions, and cascading deletions without native device dependencies.
- */
 class NodeSQLiteTestAdapter implements ISQLiteDatabase {
   public db: DatabaseSync;
   public readonly databasePath: string;
@@ -73,10 +69,8 @@ class NodeSQLiteTestAdapter implements ISQLiteDatabase {
   }
 }
 
-describe("Backend B — Data Engine Synthetic Tests", () => {
-  // --------------------------------------------------------------------------
-  // 1. SQLiteDocumentRepository Tests
-  // --------------------------------------------------------------------------
+describe("Backend B: Data Engine Synthetic Tests", () => {
+
   describe("SQLiteDocumentRepository", () => {
     it("should save and retrieve a document with all reconstructed properties", async () => {
       const adapter = new NodeSQLiteTestAdapter(":memory:");
@@ -296,7 +290,6 @@ describe("Backend B — Data Engine Synthetic Tests", () => {
         fields: [],
       };
 
-      // Perform multiple consecutive operations
       await repo.save(testDoc);
       await repo.getById("doc-init-once");
       await repo.getAll();
@@ -318,7 +311,7 @@ describe("Backend B — Data Engine Synthetic Tests", () => {
         async execAsync(source: string): Promise<void> {
           if (source.includes("PRAGMA foreign_keys = ON;")) {
             initCount++;
-            // Simulate slight async I/O latency to stress concurrent callers
+
             await new Promise((resolve) => setTimeout(resolve, 20));
           }
           await baseAdapter.execAsync(source);
@@ -332,7 +325,6 @@ describe("Backend B — Data Engine Synthetic Tests", () => {
 
       const repo = new SQLiteDocumentRepository(delayedAdapter);
 
-      // Launch 5 concurrent calls simultaneously
       const results = await Promise.all([
         repo.getAll(),
         repo.getById("non-existent-1"),
@@ -368,7 +360,6 @@ describe("Backend B — Data Engine Synthetic Tests", () => {
 
       const repo = new SQLiteDocumentRepository(failingAdapter);
 
-      // First call fails
       await assert.rejects(
         async () => {
           await repo.getAll();
@@ -377,7 +368,6 @@ describe("Backend B — Data Engine Synthetic Tests", () => {
         "First call must reject with the initial failure"
       );
 
-      // Subsequent call retries and succeeds cleanly
       const docs = await repo.getAll();
       assert.deepEqual(docs, [], "Retried call must succeed after transient failure clears");
     });
@@ -402,19 +392,14 @@ describe("Backend B — Data Engine Synthetic Tests", () => {
     });
   });
 
-  // --------------------------------------------------------------------------
-  // 2. FieldValidator Tests
-  // --------------------------------------------------------------------------
   describe("FieldValidator", () => {
     it("should validate Aadhaar numbers using Verhoeff checksum algorithm", () => {
       assert.equal(FieldValidator.isValidAadhaar("200000000013"), true);
       assert.equal(FieldValidator.isValidAadhaar("2000 0000 0013"), true);
 
-      // Checksum tampered digit should fail
       assert.equal(FieldValidator.isValidAadhaar("200000000018"), false);
       assert.equal(FieldValidator.isValidAadhaar("200000000019"), false);
 
-      // Invalid length should fail
       assert.equal(FieldValidator.isValidAadhaar("1234"), false);
       assert.equal(FieldValidator.isValidAadhaar("abcdefghijkl"), false);
     });
@@ -461,9 +446,6 @@ describe("Backend B — Data Engine Synthetic Tests", () => {
     });
   });
 
-  // --------------------------------------------------------------------------
-  // 3. FieldMatcher & ConfidencePolicy Tests
-  // --------------------------------------------------------------------------
   describe("FieldMatcher & ConfidencePolicy", () => {
     const confirmedDocs: DocumentRecord[] = [
       {
@@ -591,9 +573,6 @@ describe("Backend B — Data Engine Synthetic Tests", () => {
       }
     });
 
-    // ------------------------------------------------------------------------
-    // Audit Regression Tests: Field Matching and Safety Invariants
-    // ------------------------------------------------------------------------
     it("Regression 1: should match 'Applicant Name' to FULL_NAME", () => {
       const matcher = new FieldMatcher();
       const fields: FormField[] = [
@@ -730,9 +709,6 @@ describe("Backend B — Data Engine Synthetic Tests", () => {
     });
   });
 
-  // --------------------------------------------------------------------------
-  // 4. CopyListBuilder Tests
-  // --------------------------------------------------------------------------
   describe("CopyListBuilder", () => {
     it("should build ordered copy items and exclude skipped or missing values from clipboard output", () => {
       const builder = new CopyListBuilder();
@@ -751,14 +727,11 @@ describe("Backend B — Data Engine Synthetic Tests", () => {
       const items = builder.buildCopyItems(filledFields);
       assert.equal(items.length, 2);
 
-      // Verify ordering (only FILLED items are copied)
       assert.equal(items[0].order, 1);
       assert.equal(items[1].order, 2);
 
-      // Verify Aadhaar masking
       assert.equal(items[1].value, "•••• •••• 0013", "Aadhaar must be masked in CopyItem display");
 
-      // Verify plain text formatting (formatPlainText receives all items passed to it)
       const allItems = [
         { fieldId: "f1", label: "Full Name", value: "Anita Roy", status: "FILLED" as const, order: 1 },
         { fieldId: "f2", label: "Aadhaar Number", value: "•••• •••• 0013", status: "FILLED" as const, order: 2 },

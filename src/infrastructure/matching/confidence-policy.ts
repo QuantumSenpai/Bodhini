@@ -8,16 +8,13 @@ export interface PolicyEvaluation {
 }
 
 export class ConfidencePolicy {
-  /**
-   * Evaluates form field constraints to determine whether it should be skipped, filled, or marked for user attention.
-   */
+
   public static evaluate(
     field: FormField,
     hasConfirmedValue: boolean,
     matchType?: "exact" | "synonym" | "partial"
   ): PolicyEvaluation {
-    // 1. Mandatory safety invariant: Signatures and declarations are always SKIPPED
-    // Checks field.type, field.label, and field.instruction
+
     if (
       field.type === "SIGNATURE" ||
       field.type === "DECLARATION" ||
@@ -31,7 +28,6 @@ export class ConfidencePolicy {
       };
     }
 
-    // 2. If no confirmed document value exists, never fabricate; require user input
     if (!hasConfirmedValue) {
       return {
         status: "NEEDS_USER",
@@ -40,7 +36,6 @@ export class ConfidencePolicy {
       };
     }
 
-    // 3. Compute confidence based on match quality
     let confidence = 0.7;
     let reason = "Matched via field name overlap";
 

@@ -33,7 +33,7 @@ function addField(
   value: string,
   confidence: number,
 ): void {
-  const cleaned = value.replace(/^[\s:–—-]+|[\s:;]+$/g, "").trim();
+  const cleaned = value.replace(/^[\s:\-]+|[\s:;]+$/g, "").trim();
   if (!cleaned || fields.has(key)) return;
   if (key !== "OTHER" && !FieldValidator.validate(key, cleaned)) return;
   fields.set(key, {
@@ -79,7 +79,7 @@ function parseFields(text: string, documentType: DocumentAnalysis["type"], block
   const fields = new Map<FieldKey, ExtractedField>();
 
   lines.forEach((line, index) => {
-    const split = line.match(/^(.{2,48}?)[\s:：–—-]{1,4}(.+)$/);
+    const split = line.match(/^(.{2,48}?)[\s:：\-\-]{1,4}(.+)$/);
     if (split) {
       const resolution = resolveFieldKey(split[1].trim());
       const fallbackKey = documentFieldKey(split[1].trim(), documentType);

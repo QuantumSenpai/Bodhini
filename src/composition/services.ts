@@ -7,7 +7,6 @@ import { OcrDocumentProcessor } from "../infrastructure/vision/ocr/OcrDocumentPr
 import { OcrFormAnalyzer } from "../infrastructure/vision/ocr/OcrFormAnalyzer";
 import { ExpoSpeechVoiceService } from "../infrastructure/voice/ExpoSpeechVoiceService";
 
-/** The only place where concrete device/backend adapters are constructed. */
 export const services: BodhiniServices = {
   documentProcessor: new OcrDocumentProcessor(),
   documentRepository: new SQLiteDocumentRepository("bodhini.db"),

@@ -1,5 +1,4 @@
-// Small TypeScript require hook so the Node 22+ synthetic backend suite can run
-// without adding a second runtime tool. TypeScript is already a project dev dependency.
+
 const fs = require("node:fs");
 const ts = require("typescript");
 

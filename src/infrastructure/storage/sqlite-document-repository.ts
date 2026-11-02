@@ -34,10 +34,6 @@ export class SQLiteDocumentRepository implements DocumentRepository {
     }
   }
 
-  /**
-   * Returns active database instance, initializing schema and foreign keys if needed.
-   * Uses safe concurrency guard to initialize only once per connection.
-   */
   public async getDatabase(): Promise<ISQLiteDatabase> {
     if (!this.db) {
       if (!this.dbOpenPromise) {
@@ -60,11 +56,6 @@ export class SQLiteDocumentRepository implements DocumentRepository {
     return activeDb;
   }
 
-  /**
-   * Safe initialization guard that ensures schema is initialized only once per connection,
-   * safely handles concurrent first calls, allows retries if initialization fails,
-   * and preserves foreign key enforcement.
-   */
   private async ensureInitialized(db: ISQLiteDatabase): Promise<void> {
     if (this.isInitialized) {
       return;
@@ -87,14 +78,10 @@ export class SQLiteDocumentRepository implements DocumentRepository {
     await this.initPromise;
   }
 
-  /**
-   * Initializes foreign key enforcement and required tables.
-   */
   private async initDatabase(db: ISQLiteDatabase): Promise<void> {
-    // 1. Enforce SQLite foreign key constraints
+
     await db.execAsync("PRAGMA foreign_keys = ON;");
 
-    // 2. Create documents table
     await db.execAsync(`
       CREATE TABLE IF NOT EXISTS documents (
         id TEXT PRIMARY KEY NOT NULL,
@@ -105,7 +92,6 @@ export class SQLiteDocumentRepository implements DocumentRepository {
       );
     `);
 
-    // 3. Create document_fields table persisting all ExtractedField properties
     await db.execAsync(`
       CREATE TABLE IF NOT EXISTS document_fields (
         id TEXT PRIMARY KEY NOT NULL,
@@ -119,34 +105,28 @@ export class SQLiteDocumentRepository implements DocumentRepository {
       );
     `);
 
-    // 4. Index on document_id for fast cascading and join queries
     await db.execAsync(`
       CREATE INDEX IF NOT EXISTS idx_document_fields_document_id
       ON document_fields (document_id);
     `);
   }
 
-  /**
-   * Saves or updates a confirmed DocumentRecord along with its ExtractedField items.
-   */
   async save(doc: DocumentRecord): Promise<void> {
     const db = await this.getDatabase();
 
     await db.withTransactionAsync(async () => {
-      // Upsert document record
+
       await db.runAsync(
         `INSERT OR REPLACE INTO documents (id, type, image_uri, created_at, confirmed_at)
          VALUES (?, ?, ?, ?, ?);`,
         [doc.id, doc.type, doc.imageUri, new Date(doc.createdAt).toISOString(), new Date(doc.confirmedAt).toISOString()]
       );
 
-      // Remove any existing fields for this document prior to inserting updated ones
       await db.runAsync(
         `DELETE FROM document_fields WHERE document_id = ?;`,
         [doc.id]
       );
 
-      // Persist all ExtractedField entries
       for (const field of doc.fields) {
         await db.runAsync(
           `INSERT INTO document_fields (id, document_id, key, label, value, confidence, source)
@@ -165,9 +145,6 @@ export class SQLiteDocumentRepository implements DocumentRepository {
     });
   }
 
-  /**
-   * Retrieves all confirmed DocumentRecords with their ExtractedField items.
-   */
   async getAll(): Promise<DocumentRecord[]> {
     const db = await this.getDatabase();
 
@@ -217,9 +194,6 @@ export class SQLiteDocumentRepository implements DocumentRepository {
     }));
   }
 
-  /**
-   * Retrieves a single DocumentRecord by id with its ExtractedField items.
-   */
   async getById(id: string): Promise<DocumentRecord | null> {
     const db = await this.getDatabase();
 
@@ -262,17 +236,11 @@ export class SQLiteDocumentRepository implements DocumentRepository {
     };
   }
 
-  /**
-   * Deletes a document by id. Because of ON DELETE CASCADE, its fields are deleted automatically.
-   */
   async delete(id: string): Promise<void> {
     const db = await this.getDatabase();
     await db.runAsync(`DELETE FROM documents WHERE id = ?;`, [id]);
   }
 
-  /**
-   * Closes the active database connection (useful for simulating app restarts in tests).
-   */
   private toTimestamp(value: string | number): number {
     if (typeof value === "number") return value;
     const numeric = Number(value);

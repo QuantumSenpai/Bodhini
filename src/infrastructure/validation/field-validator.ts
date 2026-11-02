@@ -1,8 +1,5 @@
 import { FieldKey } from "../../domain/document/document.types";
 
-/**
- * Verhoeff checksum multiplication table (d).
- */
 const VERHOEFF_D: number[][] = [
   [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
   [1, 2, 3, 4, 0, 6, 7, 8, 9, 5],
@@ -16,9 +13,6 @@ const VERHOEFF_D: number[][] = [
   [9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
 ];
 
-/**
- * Verhoeff permutation table (p).
- */
 const VERHOEFF_P: number[][] = [
   [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
   [1, 5, 7, 6, 2, 8, 3, 0, 9, 4],
@@ -31,9 +25,7 @@ const VERHOEFF_P: number[][] = [
 ];
 
 export class FieldValidator {
-  /**
-   * Validates an Indian Aadhaar number using length, digits, and Verhoeff algorithm.
-   */
+
   public static isValidAadhaar(value: string): boolean {
     const cleaned = value.replace(/\s+/g, "").replace(/-/g, "");
     if (!/^\d{12}$/.test(cleaned)) {
@@ -53,9 +45,6 @@ export class FieldValidator {
     return c === 0;
   }
 
-  /**
-   * Masks an Aadhaar number to show only the last 4 digits: •••• •••• 1234
-   */
   public static maskAadhaar(value: string): string {
     const cleaned = value.replace(/\s+/g, "").replace(/-/g, "");
     if (cleaned.length < 4) {
@@ -65,22 +54,14 @@ export class FieldValidator {
     return `•••• •••• ${last4}`;
   }
 
-  /**
-   * Validates an Indian PAN card number (5 letters, 4 digits, 1 letter).
-   */
   public static isValidPan(value: string): boolean {
     const cleaned = value.trim().toUpperCase();
     return /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(cleaned);
   }
 
-  /**
-   * Normalizes and validates dates in common formats (DD/MM/YYYY, DD-MM-YYYY, YYYY-MM-DD) to ISO-8601 (YYYY-MM-DD).
-   * Returns normalized string if valid, or null if invalid.
-   */
   public static normalizeDob(value: string): string | null {
     const trimmed = value.trim();
 
-    // Check YYYY-MM-DD
     const isoMatch = /^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/.exec(trimmed);
     if (isoMatch) {
       const year = parseInt(isoMatch[1], 10);
@@ -89,7 +70,6 @@ export class FieldValidator {
       return FieldValidator.validateDateValues(year, month, day);
     }
 
-    // Check DD/MM/YYYY or DD-MM-YYYY
     const dmyMatch = /^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/.exec(trimmed);
     if (dmyMatch) {
       const day = parseInt(dmyMatch[1], 10);
@@ -101,9 +81,6 @@ export class FieldValidator {
     return null;
   }
 
-  /**
-   * Validates Indian 10-digit mobile number, stripping country code or leading 0.
-   */
   public static isValidPhone(value: string): boolean {
     const cleaned = value
       .replace(/\s+/g, "")
@@ -114,9 +91,6 @@ export class FieldValidator {
     return /^[6-9]\d{9}$/.test(cleaned);
   }
 
-  /**
-   * Normalizes phone number to 10 digits.
-   */
   public static normalizePhone(value: string): string | null {
     const cleaned = value
       .replace(/\s+/g, "")
@@ -130,21 +104,14 @@ export class FieldValidator {
     return null;
   }
 
-  /**
-   * Validates Indian 6-digit postal PIN code.
-   */
   public static isValidPinCode(value: string): boolean {
     const cleaned = value.trim();
     return /^[1-9][0-9]{5}$/.test(cleaned);
   }
 
-  /**
-   * Normalizes gender input across English, Hindi, and Bengali.
-   */
   public static normalizeGender(value: string): "Male" | "Female" | "Other" | null {
     const normalized = value.trim().toLowerCase();
 
-    // Male patterns
     if (
       normalized === "male" ||
       normalized === "m" ||
@@ -155,7 +122,6 @@ export class FieldValidator {
       return "Male";
     }
 
-    // Female patterns
     if (
       normalized === "female" ||
       normalized === "f" ||
@@ -167,7 +133,6 @@ export class FieldValidator {
       return "Female";
     }
 
-    // Other / Transgender patterns
     if (
       normalized === "other" ||
       normalized === "transgender" ||
@@ -181,9 +146,6 @@ export class FieldValidator {
     return null;
   }
 
-  /**
-   * General validator dispatcher for standard FieldKeys.
-   */
   public static validate(key: FieldKey, value: string): boolean {
     if (!value || value.trim().length === 0) {
       return false;

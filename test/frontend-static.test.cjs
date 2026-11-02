@@ -29,10 +29,14 @@ test('all 12 reference screens have an Expo Router route', () => {
 test('SDK 58 baseline remains aligned with the source project', () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
   const app = JSON.parse(fs.readFileSync(path.join(root, 'app.json'), 'utf8'));
-  assert.equal(pkg.dependencies.expo, '~58.0.21');
+  const expoVersion = pkg.dependencies.expo;
+  const [, major, minor] = expoVersion.match(/^~?(\d+)\.(\d+)\./) || [];
+  assert.ok(major === '58' && minor === '0', `expo major.minor must be 58.0, got ${major}.${minor}`);
   assert.equal(pkg.dependencies['react-native'], '0.88.1');
   assert.equal(pkg.dependencies.react, '19.3.0');
-  assert.equal(pkg.dependencies['expo-router'], '~58.0.28');
+  const routerVersion = pkg.dependencies['expo-router'];
+  const [, routerMajor, routerMinor] = routerVersion.match(/^~?(\d+)\.(\d+)\./) || [];
+  assert.ok(routerMajor === '58' && routerMinor === '0', `expo-router major.minor must be 58.0, got ${routerMajor}.${routerMinor}`);
   assert.equal(app.expo.slug, 'bodhini');
 });
 

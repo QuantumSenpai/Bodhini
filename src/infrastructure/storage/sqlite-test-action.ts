@@ -8,15 +8,6 @@ export interface SQLiteSmokeTestResult {
   error?: string;
 }
 
-/**
- * Temporary test action to verify the SQLiteDocumentRepository lifecycle:
- * 1. Initializes the SQLite database.
- * 2. Saves one confirmed sample DocumentRecord.
- * 3. Retrieves all saved documents.
- * 4. Retrieves the saved document by ID.
- * 5. Deletes the test document.
- * 6. Confirms that deletion worked.
- */
 export async function runSQLiteSmokeTest(
   repository?: SQLiteDocumentRepository,
   onLog?: (message: string) => void
@@ -36,12 +27,10 @@ export async function runSQLiteSmokeTest(
   try {
     log("=== Starting SQLiteDocumentRepository Smoke Test ===");
 
-    // Step 1: Initialize database
     log("[Step 1/6] Initializing SQLite database and schema...");
     const db = await repo.getDatabase();
     log(`[Step 1/6] Database initialized successfully (Connection active).`);
 
-    // Step 2: Save one confirmed sample DocumentRecord (Synthetic Data Only)
     log("[Step 2/6] Saving one confirmed sample DocumentRecord (synthetic test data)...");
     const sampleDoc: DocumentRecord = {
       id: sampleDocId,
@@ -88,7 +77,6 @@ export async function runSQLiteSmokeTest(
     await repo.save(sampleDoc);
     log(`[Step 2/6] Document saved: ID='${sampleDoc.id}' with ${sampleDoc.fields.length} extracted fields.`);
 
-    // Step 3: Retrieve all saved documents
     log("[Step 3/6] Retrieving all saved documents via getAll()...");
     const allDocs = await repo.getAll();
     const foundDoc = allDocs.find((d) => d.id === sampleDocId);
@@ -97,7 +85,6 @@ export async function runSQLiteSmokeTest(
     }
     log(`[Step 3/6] Total documents retrieved: ${allDocs.length}. Found target document '${foundDoc.id}'.`);
 
-    // Step 4: Retrieve the saved document by ID
     log(`[Step 4/6] Retrieving document by ID ('${sampleDocId}')...`);
     const retrievedById = await repo.getById(sampleDocId);
     if (!retrievedById) {
@@ -112,12 +99,10 @@ export async function runSQLiteSmokeTest(
       `[Step 4/6] Successfully retrieved document: '${retrievedById.id}' (${retrievedById.type}) with ${retrievedById.fields.length} fields fully reconstructed.`
     );
 
-    // Step 5: Delete the test document
     log(`[Step 5/6] Deleting test document '${sampleDocId}'...`);
     await repo.delete(sampleDocId);
     log(`[Step 5/6] Delete operation completed.`);
 
-    // Step 6: Confirm that deletion worked
     log(`[Step 6/6] Verifying deletion via getById() and getAll()...`);
     const postDeleteGet = await repo.getById(sampleDocId);
     if (postDeleteGet !== null) {

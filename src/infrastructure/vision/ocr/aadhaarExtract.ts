@@ -23,7 +23,7 @@ function addField(
   value: string,
   confidence: number,
 ): void {
-  const cleaned = value.replace(/^[\s:–—-]+|[\s:;]+$/g, "").trim();
+  const cleaned = value.replace(/^[\s:\-]+|[\s:;]+$/g, "").trim();
   if (!cleaned || fields.has(key)) return;
   fields.set(key, {
     id: `ocr-${key.toLowerCase()}-${fields.size + 1}`,
