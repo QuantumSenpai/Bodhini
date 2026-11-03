@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, StyleSheet, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
-import { AlertCircle, Check, Eye, EyeOff, Plus } from "lucide-react-native";
+import { AlertCircle, Check, Copy, Eye, EyeOff, Plus } from "lucide-react-native";
 import * as FileSystem from "expo-file-system/legacy";
 import {
   BodhiniScreen,
@@ -11,7 +11,6 @@ import {
   TopBar,
   VoicePromptButton,
 } from "../../components/ui/BodhiniUI";
-import { useBodhini } from "../../state/AppContext";
 import { redactForDebug } from "../../infrastructure/vision/ocr/redact";
 import type { OcrRow } from "../../infrastructure/vision/ocr/ocr.types";
 import { services } from "../../composition/services";
@@ -21,6 +20,9 @@ import { CONFIDENCE_THRESHOLD } from "../../domain/constants";
 import { documentTypeLabel, fieldKeyLabel, t, type TranslationKey } from "../../i18n/translations";
 import { AnimatedCheck, FadeInUp, Hint, PressableScale } from "../../components/motion";
 import { useTheme } from "../../theme/ThemeProvider";
+import { clipboardService } from "../../infrastructure/export/clipboardService";
+import { displayValue } from "../../infrastructure/export/fieldDisplay";
+import { useBodhini } from "../../state/AppContext";
 
 function makeId() {
   return `doc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -54,6 +56,9 @@ export default function ScanReviewScreen() {
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [revealAadhaar, setRevealAadhaar] = useState(false);
   const [editingAadhaarId, setEditingAadhaarId] = useState<string | null>(null);
+  const [revealFieldId, setRevealFieldId] = useState<string | null>(null);
+  const [copiedFieldId, setCopiedFieldId] = useState<string | null>(null);
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!pendingDocument) {
@@ -62,6 +67,12 @@ export default function ScanReviewScreen() {
       setFields(pendingDocument.analysis.fields);
     }
   }, [pendingDocument, router]);
+
+  useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+    };
+  }, []);
 
   const warnings = useMemo(
     () => fields.filter((field) => !services.documentValidator.validate(field).ok),
@@ -183,11 +194,15 @@ export default function ScanReviewScreen() {
           const needsAttention = !validation.ok || isLowConfidence;
           const isAadhaar = field.key === "AADHAAR_NO";
           const isEditingThisAadhaar = editingAadhaarId === field.id;
-          const displayValue =
-            isAadhaar && !revealAadhaar && !isEditingThisAadhaar
-              ? FieldValidator.maskAadhaar(field.value)
+          const revealThis = revealFieldId === field.id;
+          const displayValueResult =
+            isAadhaar && !revealThis && !isEditingThisAadhaar
+              ? displayValue("AADHAAR_NO", field.value, false)
+              : isAadhaar
+              ? displayValue("AADHAAR_NO", field.value, revealThis)
               : field.value;
           const localizedLabel = fieldKeyLabel(language, field.key, field.label);
+          const isCopied = copiedFieldId === field.id;
 
           return (
             <FadeInUp key={field.id} index={index} maxAnimated={8}>
@@ -207,7 +222,7 @@ export default function ScanReviewScreen() {
                       {localizedLabel}
                     </Text>
                     <TextInput
-                      value={displayValue}
+                      value={displayValueResult}
                       onChangeText={(val) => updateField(field.id, val)}
                       onFocus={() => {
                         if (isAadhaar) setEditingAadhaarId(field.id);
@@ -231,15 +246,15 @@ export default function ScanReviewScreen() {
                     {isAadhaar ? (
                       <Hint
                         hint={t(language, "hintRevealAadhaar")}
-                        label={revealAadhaar ? t(language, "hideAadhaar") : t(language, "revealAadhaar")}
+                        label={revealThis ? t(language, "hideValue") : t(language, "showValue")}
                       >
                         <PressableScale
-                          onPress={() => setRevealAadhaar((v) => !v)}
+                          onPress={() => setRevealFieldId(revealThis ? null : field.id)}
                           accessibilityRole="button"
-                          accessibilityLabel={revealAadhaar ? t(language, "hideAadhaar") : t(language, "revealAadhaar")}
+                          accessibilityLabel={revealThis ? t(language, "hideValue") : t(language, "showValue")}
                           style={styles.eyeHit}
                         >
-                          {revealAadhaar ? (
+                          {revealThis ? (
                             <EyeOff size={20} color={colors.secondaryText} />
                           ) : (
                             <Eye size={20} color={colors.secondaryText} />
@@ -247,6 +262,41 @@ export default function ScanReviewScreen() {
                         </PressableScale>
                       </Hint>
                     ) : null}
+                    <Hint
+                      hint={t(language, "hintCopyField")}
+                      label={isCopied ? t(language, "copied") : t(language, "copyField")}
+                    >
+                      <PressableScale
+                        onPress={async () => {
+                          const sensitive = await clipboardService.copy(isAadhaar ? "AADHAAR_NO" : "OTHER", field.value);
+                          setCopiedFieldId(field.id);
+                          if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+                          copiedTimerRef.current = setTimeout(() => {
+                            setCopiedFieldId(null);
+                          }, 1500);
+                        }}
+                        accessibilityRole="button"
+                        accessibilityLabel={isCopied ? t(language, "copied") : t(language, "copyField")}
+                        style={[
+                          styles.rowCopyBtn,
+                          { backgroundColor: isCopied ? colors.successLight : colors.forestLight },
+                        ]}
+                      >
+                        {isCopied ? (
+                          <Check size={14} color={colors.success} strokeWidth={2.5} />
+                        ) : (
+                          <Copy size={14} color={colors.forest} />
+                        )}
+                        <Text
+                          style={[
+                            styles.rowCopyText,
+                            { color: isCopied ? colors.success : colors.forest, fontSize: theme.typeScale.label.fontSize },
+                          ]}
+                        >
+                          {isCopied ? t(language, "copied") : t(language, "copyField")}
+                        </Text>
+                      </PressableScale>
+                    </Hint>
 
                     {needsAttention ? (
                       <View style={[styles.warnCircle, { backgroundColor: colors.warningLight }]}>
@@ -313,7 +363,7 @@ export default function ScanReviewScreen() {
           <PressableScale
             onPress={() => {
               const text = pendingDocument.analysis.rows!.map((r: OcrRow) => `[${r.script}] ${redactForDebug(r.text)}`).join("\n");
-              import("expo-clipboard").then((mod) => mod.setStringAsync(text)).catch(() => undefined);
+              clipboardService.copyText(text).catch(() => undefined);
               showToast(t(language, "copied"));
             }}
             accessibilityRole="button"
@@ -422,6 +472,17 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
+  },
+  rowCopyBtn: {
+    minHeight: 48,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  rowCopyText: {
+    fontWeight: "700",
   },
   helperText: {
     fontWeight: "500",

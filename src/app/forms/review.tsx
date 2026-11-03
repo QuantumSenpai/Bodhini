@@ -14,7 +14,6 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react-native";
-import * as Clipboard from "expo-clipboard";
 import {
   BodhiniScreen,
   EmptyState,
@@ -30,6 +29,8 @@ import { CONFIDENCE_THRESHOLD } from "../../domain/constants";
 import { fieldKeyLabel, t } from "../../i18n/translations";
 import { FadeInUp, Hint, PressableScale } from "../../components/motion";
 import { useTheme } from "../../theme/ThemeProvider";
+import { clipboardService } from "../../infrastructure/export/clipboardService";
+import { displayValue } from "../../infrastructure/export/fieldDisplay";
 
 function statusLabel(field: FilledField, language: "en" | "bn" | "hi"): string {
   if (field.status === "SKIPPED") return t(language, "skipped");
@@ -81,10 +82,13 @@ export default function FormReviewScreen() {
   const copyValue = useCallback(async (field: FilledField) => {
     if (field.status !== "FILLED" || !field.value) return;
     try {
-      await Clipboard.setStringAsync(field.value, { android: { isSensitive: true } });
+      const isAadhaar = field.matchedKey === "AADHAAR_NO";
+      const isPan = field.matchedKey === "PAN_NO";
+      const key = isAadhaar ? "AADHAAR_NO" : isPan ? "PAN_NO" : "OTHER";
+      const sensitive = await clipboardService.copy(key, field.value);
       if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
       setCopiedId(field.field.id);
-      showToast(`${field.field.label}: ${t(language, "copied")}`);
+      showToast(sensitive ? t(language, "copiedSensitive") : t(language, "copied"));
       copyTimerRef.current = setTimeout(() => {
         setCopiedId(null);
       }, 1500);

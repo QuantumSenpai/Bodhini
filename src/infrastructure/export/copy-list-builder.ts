@@ -1,7 +1,7 @@
 import { FilledField, CopyItem, FormField } from "../../domain/form/form.types";
 import { FieldKey } from "../../domain/document/document.types";
 import { FormExporter } from "../../domain/document/document.ports";
-import { isValidAadhaar, maskAadhaar } from "../validation/verhoeff";
+import { displayValue } from "./fieldDisplay";
 
 export class CopyListBuilder implements FormExporter {
   public buildCopyItems(fields: FilledField[]): CopyItem[] {
@@ -9,10 +9,10 @@ export class CopyListBuilder implements FormExporter {
       .filter((filled) => filled.status === "FILLED")
       .map((filled, index) => {
         const field = filled.field as FormField;
-        let displayValue = filled.value ?? "";
+        let displayValueResult = filled.value ?? "";
 
-        if ((field.key === "AADHAAR_NO" || isValidAadhaar(displayValue)) && displayValue.trim().length > 0) {
-          displayValue = maskAadhaar(displayValue);
+        if (field.key === "AADHAAR_NO" && displayValueResult.trim().length > 0) {
+          displayValueResult = displayValue(field.key, displayValueResult, false);
         }
 
         let instruction: string | undefined;
@@ -25,7 +25,7 @@ export class CopyListBuilder implements FormExporter {
         return {
           fieldId: field.id,
           label: field.label,
-          value: displayValue,
+          value: displayValueResult,
           status: filled.status,
           order: index + 1,
           instruction,

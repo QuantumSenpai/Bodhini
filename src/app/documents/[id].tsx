@@ -1,11 +1,13 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
+  Check,
   ChevronDown,
   ChevronRight,
   ChevronUp,
   Cloud,
+  Copy,
   Eye,
   EyeOff,
   FileText,
@@ -30,6 +32,8 @@ import { useBodhini } from "../../state/AppContext";
 import { documentTypeLabel, fieldKeyLabel, t } from "../../i18n/translations";
 import { FadeInUp, Hint, PressableScale, Shimmer } from "../../components/motion";
 import { useTheme } from "../../theme/ThemeProvider";
+import { clipboardService } from "../../infrastructure/export/clipboardService";
+import { displayValue } from "../../infrastructure/export/fieldDisplay";
 
 export default function DocumentDetailScreen() {
   const router = useRouter();
@@ -40,6 +44,9 @@ export default function DocumentDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [reveal, setReveal] = useState(false);
   const [detailsExpanded, setDetailsExpanded] = useState(true);
+  const [revealFieldId, setRevealFieldId] = useState<string | null>(null);
+  const [copiedFieldId, setCopiedFieldId] = useState<string | null>(null);
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(async () => {
     if (!id) {
@@ -60,6 +67,12 @@ export default function DocumentDetailScreen() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+    };
+  }, []);
 
   const deleteRecord = useCallback(() => {
     if (!id) return;
@@ -190,8 +203,21 @@ export default function DocumentDetailScreen() {
               ) : null}
               {record.fields.map((field) => {
                 const isAadhaarField = field.key === "AADHAAR_NO";
-                const shownValue = isAadhaarField && !reveal ? FieldValidator.maskAadhaar(field.value) : field.value;
+                const revealThis = revealFieldId === field.id;
+                const shownValue = isAadhaarField ? displayValue("AADHAAR_NO", field.value, revealThis) : field.value;
                 const labelText = fieldKeyLabel(language, field.key, field.label);
+                const isCopied = copiedFieldId === field.id;
+
+                const handleCopy = async () => {
+                  const sensitive = await clipboardService.copy(isAadhaarField ? "AADHAAR_NO" : "OTHER", field.value);
+                  setCopiedFieldId(field.id);
+                  if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+                  copiedTimerRef.current = setTimeout(() => {
+                    setCopiedFieldId(null);
+                  }, 1500);
+                  // Toast is handled by clipboardService? No, we need to show toast here
+                };
+
                 return (
                   <View key={field.id} style={[styles.detailRow, { borderBottomColor: colors.separator }]}>
                     <View style={styles.detailTextGroup}>
@@ -202,25 +228,62 @@ export default function DocumentDetailScreen() {
                         {shownValue}
                       </Text>
                     </View>
-                    {isAadhaarField ? (
+                    <View style={styles.fieldRightIcons}>
+                      {isAadhaarField ? (
+                        <Hint
+                          hint={t(language, "hintRevealAadhaar")}
+                          label={revealThis ? t(language, "hideValue") : t(language, "showValue")}
+                        >
+                          <PressableScale
+                            onPress={() => setRevealFieldId(revealThis ? null : field.id)}
+                            accessibilityRole="button"
+                            accessibilityLabel={revealThis ? t(language, "hideValue") : t(language, "showValue")}
+                            style={styles.eyeHit}
+                          >
+                            {revealThis ? (
+                              <EyeOff size={20} color={colors.secondaryText} />
+                            ) : (
+                              <Eye size={20} color={colors.secondaryText} />
+                            )}
+                          </PressableScale>
+                        </Hint>
+                      ) : null}
                       <Hint
-                        hint={t(language, "hintRevealAadhaar")}
-                        label={reveal ? t(language, "hideAadhaar") : t(language, "revealAadhaar")}
+                        hint={t(language, "hintCopyField")}
+                        label={isCopied ? t(language, "copied") : t(language, "copyField")}
                       >
                         <PressableScale
-                          onPress={() => setReveal((v) => !v)}
+                          onPress={async () => {
+                            const sensitive = await clipboardService.copy(isAadhaarField ? "AADHAAR_NO" : "OTHER", field.value);
+                            setCopiedFieldId(field.id);
+                            if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+                            copiedTimerRef.current = setTimeout(() => {
+                              setCopiedFieldId(null);
+                            }, 1500);
+                          }}
                           accessibilityRole="button"
-                          accessibilityLabel={reveal ? t(language, "hideAadhaar") : t(language, "revealAadhaar")}
-                          style={styles.inlineEyeHit}
+                          accessibilityLabel={isCopied ? t(language, "copied") : t(language, "copyField")}
+                          style={[
+                            styles.rowCopyBtn,
+                            { backgroundColor: isCopied ? colors.successLight : colors.forestLight },
+                          ]}
                         >
-                          {reveal ? (
-                            <EyeOff size={20} color={colors.secondaryText} />
+                          {isCopied ? (
+                            <Check size={14} color={colors.success} strokeWidth={2.5} />
                           ) : (
-                            <Eye size={20} color={colors.secondaryText} />
+                            <Copy size={14} color={colors.forest} />
                           )}
+                          <Text
+                            style={[
+                              styles.rowCopyText,
+                              { color: isCopied ? colors.success : colors.forest, fontSize: theme.typeScale.label.fontSize },
+                            ]}
+                          >
+                            {isCopied ? t(language, "copied") : t(language, "copyField")}
+                          </Text>
                         </PressableScale>
                       </Hint>
-                    ) : null}
+                    </View>
                   </View>
                 );
               })}
@@ -391,6 +454,28 @@ const styles = StyleSheet.create({
     height: 48,
     alignItems: "flex-end",
     justifyContent: "center",
+  },
+  fieldRightIcons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  eyeHit: {
+    width: 48,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rowCopyBtn: {
+    minHeight: 48,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  rowCopyText: {
+    fontWeight: "700",
   },
   removeRow: {
     minHeight: 54,

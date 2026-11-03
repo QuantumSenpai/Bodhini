@@ -1,8 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { Check, Copy, FileImage, FileText } from "lucide-react-native";
-import * as Clipboard from "expo-clipboard";
+import { Check, Copy, Eye, EyeOff, FileImage, FileText } from "lucide-react-native";
 import { ActionCard, BodhiniScreen, PageHeading, SecondaryButton, StatusPill, TopBar } from "../../components/ui/BodhiniUI";
 import { useBodhini } from "../../state/AppContext";
 import { services } from "../../composition/services";
@@ -10,6 +9,8 @@ import { FieldValidator } from "../../infrastructure/validation/field-validator"
 import { t } from "../../i18n/translations";
 import { AnimatedCheck, ConfettiFreeGlow, CopyMorphButton, Hint, PressableScale } from "../../components/motion";
 import { useTheme } from "../../theme/ThemeProvider";
+import { clipboardService } from "../../infrastructure/export/clipboardService";
+import { displayValue } from "../../infrastructure/export/fieldDisplay";
 
 export default function FormResultScreen() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function FormResultScreen() {
   const [copyingAll, setCopyingAll] = useState(false);
   const [copiedAll, setCopiedAll] = useState(false);
   const [copiedItemId, setCopiedItemId] = useState<string | null>(null);
+  const [revealAadhaarId, setRevealAadhaarId] = useState<string | null>(null);
   const allTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const itemTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -42,10 +44,17 @@ export default function FormResultScreen() {
     if (!copyableText.trim() || copyingAll) return;
     setCopyingAll(true);
     try {
-      await Clipboard.setStringAsync(copyableText, { android: { isSensitive: true } });
+      const items = useMemo(() => services.formExporter.buildCopyItems(filledFields), [filledFields]);
+      const sensitive = await clipboardService.copyMany(
+        items.filter((item) => item.status === "FILLED").map((item) => ({
+          key: (item.label.includes("Aadhaar") || item.label.includes("आधार") || item.label.includes("आधार")) ? "AADHAAR_NO" :
+               (item.label.includes("PAN") || item.label.includes("पैन")) ? "PAN_NO" : "OTHER",
+          value: item.value,
+        }))
+      );
       if (allTimerRef.current) clearTimeout(allTimerRef.current);
       setCopiedAll(true);
-      showToast(t(language, "copyOnlyFilled"));
+      showToast(sensitive ? t(language, "copiedSensitive") : t(language, "copied"));
       allTimerRef.current = setTimeout(() => {
         setCopiedAll(false);
       }, 1500);
@@ -54,15 +63,16 @@ export default function FormResultScreen() {
     } finally {
       setCopyingAll(false);
     }
-  }, [copyableText, copyingAll, language, showToast]);
+  }, [filledFields, language, showToast, copyingAll]);
 
-  const copySingle = useCallback(async (id: string, label: string, value: string) => {
+  const copySingle = useCallback(async (id: string, label: string, value: string, matchedKey?: string) => {
     if (!value.trim()) return;
     try {
-      await Clipboard.setStringAsync(value, { android: { isSensitive: true } });
+      const key = matchedKey === "AADHAAR_NO" ? "AADHAAR_NO" : matchedKey === "PAN_NO" ? "PAN_NO" : "OTHER";
+      const sensitive = await clipboardService.copy(key, value);
       if (itemTimerRef.current) clearTimeout(itemTimerRef.current);
       setCopiedItemId(id);
-      showToast(`${label}: ${t(language, "copied")}`);
+      showToast(sensitive ? t(language, "copiedSensitive") : t(language, "copied"));
       itemTimerRef.current = setTimeout(() => {
         setCopiedItemId(null);
       }, 1500);
@@ -93,7 +103,8 @@ export default function FormResultScreen() {
         {filledFields.map((field, index) => {
           const rawValue = field.value ?? "";
           const isAadhaar = field.matchedKey === "AADHAAR_NO" || field.field.key === "AADHAAR_NO";
-          const display = isAadhaar && rawValue ? FieldValidator.maskAadhaar(rawValue) : rawValue;
+          const revealThis = revealAadhaarId === field.field.id;
+          const display = isAadhaar && rawValue ? displayValue("AADHAAR_NO", rawValue, revealThis) : rawValue;
           const isCopied = copiedItemId === field.field.id;
 
           return (
@@ -111,34 +122,55 @@ export default function FormResultScreen() {
                 </Text>
               </View>
               {field.status === "FILLED" && rawValue ? (
-                <Hint
-                  hint={t(language, "hintCopyField")}
-                  label={isCopied ? t(language, "copied") : t(language, "copyAnswer")}
-                >
-                  <PressableScale
-                    onPress={() => copySingle(field.field.id, field.field.label, rawValue)}
-                    accessibilityRole="button"
-                    accessibilityLabel={isCopied ? t(language, "copied") : t(language, "copyAnswer")}
-                    style={[
-                      styles.rowCopyBtn,
-                      { backgroundColor: isCopied ? colors.successLight : colors.forestLight },
-                    ]}
+                <View style={styles.fieldRightIcons}>
+                  {isAadhaar ? (
+                    <Hint
+                      hint={t(language, "hintRevealAadhaar")}
+                      label={revealAadhaarId === field.field.id ? t(language, "hideValue") : t(language, "showValue")}
+                    >
+                      <PressableScale
+                        onPress={() => setRevealAadhaarId(revealAadhaarId === field.field.id ? null : field.field.id)}
+                        accessibilityRole="button"
+                        accessibilityLabel={revealAadhaarId === field.field.id ? t(language, "hideValue") : t(language, "showValue")}
+                        style={styles.eyeHit}
+                      >
+                        {revealAadhaarId === field.field.id ? (
+                          <EyeOff size={20} color={colors.secondaryText} />
+                        ) : (
+                          <Eye size={20} color={colors.secondaryText} />
+                        )}
+                      </PressableScale>
+                    </Hint>
+                  ) : null}
+                  <Hint
+                    hint={t(language, "hintCopyField")}
+                    label={isCopied ? t(language, "copied") : t(language, "copyAnswer")}
                   >
-                    {isCopied ? (
-                      <Check size={14} color={colors.success} strokeWidth={2.5} />
-                    ) : (
-                      <Copy size={14} color={colors.forest} />
-                    )}
-                    <Text
+                    <PressableScale
+                      onPress={() => copySingle(field.field.id, field.field.label, rawValue, isAadhaar ? "AADHAAR_NO" : field.matchedKey)}
+                      accessibilityRole="button"
+                      accessibilityLabel={isCopied ? t(language, "copied") : t(language, "copyAnswer")}
                       style={[
-                        styles.rowCopyText,
-                        { color: isCopied ? colors.success : colors.forest, fontSize: theme.typeScale.label.fontSize },
+                        styles.rowCopyBtn,
+                        { backgroundColor: isCopied ? colors.successLight : colors.forestLight },
                       ]}
                     >
-                      {isCopied ? t(language, "copied") : t(language, "copyAnswer")}
-                    </Text>
-                  </PressableScale>
-                </Hint>
+                      {isCopied ? (
+                        <Check size={14} color={colors.success} strokeWidth={2.5} />
+                      ) : (
+                        <Copy size={14} color={colors.forest} />
+                      )}
+                      <Text
+                        style={[
+                          styles.rowCopyText,
+                          { color: isCopied ? colors.success : colors.forest, fontSize: theme.typeScale.label.fontSize },
+                        ]}
+                      >
+                        {isCopied ? t(language, "copied") : t(language, "copyAnswer")}
+                      </Text>
+                    </PressableScale>
+                  </Hint>
+                </View>
               ) : (
                 <StatusPill
                   label={field.status === "SKIPPED" ? t(language, "skipped") : t(language, "missing")}
@@ -245,6 +277,17 @@ const styles = StyleSheet.create({
   },
   copyAllBtn: {
     marginBottom: 14,
+  },
+  fieldRightIcons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  eyeHit: {
+    width: 48,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
   },
   fillAnother: {
     marginTop: 4,
