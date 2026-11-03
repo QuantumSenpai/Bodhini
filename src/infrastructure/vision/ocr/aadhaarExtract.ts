@@ -13,6 +13,7 @@ const LABELS: Record<FieldKey, string> = {
   PIN_CODE: "PIN Code",
   AADHAAR_NO: "Aadhaar Number",
   PAN_NO: "PAN Number",
+  EPIC_NO: "EPIC Number",
   PHONE: "Phone Number",
   EMAIL: "Email Address",
   OTHER: "Other",

@@ -100,5 +100,11 @@ run("script detection: mixed", () => {
   return rows[0].script === "latin";
 });
 
+run("EPIC token with OCR-like confusions is not rewritten by digit fixer", () => {
+  const blocks: OcrBlock[] = [makeBlock("0BC1234567", 10, 10, 100, 20)];
+  const rows = buildLines(blocks);
+  return rows[0].text === "0BC1234567";
+});
+
 console.log(`\nPASS: ${passCount}, FAIL: ${failCount}`);
 if (failCount > 0) process.exit(1);

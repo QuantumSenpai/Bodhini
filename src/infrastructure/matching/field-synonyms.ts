@@ -139,6 +139,25 @@ export const FIELD_SYNONYMS: Record<FieldKey, string[]> = {
     "আধার সংখ্যা",
   ],
 
+  EPIC_NO: [
+
+    "epic",
+    "epic no",
+    "epic number",
+    "voter id",
+    "voter id number",
+    "elector photo identity card",
+    "epic card",
+
+    "एपिक",
+    "एपिक नंबर",
+    "मतदाता पहचान पत्र",
+
+    "ইপিক",
+    "ইপিক নম্বর",
+    "নির্বাচক ফটো পরিচয়পত্র",
+  ],
+
   PAN_NO: [
 
     "pan",

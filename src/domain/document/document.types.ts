@@ -16,6 +16,7 @@ export interface OcrRow {
 export type DocumentType =
   | "AADHAAR"
   | "PAN"
+  | "VOTER_ID"
   | "BIRTH_CERTIFICATE"
   | "RATION_CARD"
   | "MARKSHEET"
@@ -32,6 +33,7 @@ export type FieldKey =
   | "PIN_CODE"
   | "AADHAAR_NO"
   | "PAN_NO"
+  | "EPIC_NO"
   | "PHONE"
   | "EMAIL"
   | "OTHER";

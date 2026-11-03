@@ -14,15 +14,19 @@ function hasValidPan(text: string): boolean {
   return matches.some((m) => isValidPan(m));
 }
 
+function hasValidEpic(text: string): boolean {
+  const matches = text.match(/\b[A-Z]{3}\d{7}\b/g);
+  if (!matches) return false;
+  return matches.some((m) => /^[A-Z]{3}\d{7}$/.test(m));
+}
+
 export function classifyDocument(text: string): DocumentType {
   const lower = text.toLowerCase();
-  const hasAadhaar = hasAadhaarNumber(text);
-  const hasPan = hasValidPan(text);
 
-  if (lower.includes("aadhaar") || (lower.includes("government of india") && hasAadhaar)) {
+  if (lower.includes("aadhaar") || (lower.includes("government of india") && hasAadhaarNumber(text))) {
     return "AADHAAR";
   }
-  if (hasPan) return "PAN";
+  if (hasValidPan(text)) return "PAN";
   if (lower.includes("pan") && lower.includes("income tax department")) {
     return "PAN";
   }
@@ -38,6 +42,10 @@ export function classifyDocument(text: string): DocumentType {
   if (lower.includes("domicile")) {
     return "DOMICILE";
   }
-  if (hasAadhaar) return "AADHAAR";
+  if (lower.includes("election commission of india") || lower.includes("elector photo identity")) {
+    return "VOTER_ID";
+  }
+  if (hasAadhaarNumber(text)) return "AADHAAR";
+  if (hasValidEpic(text)) return "VOTER_ID";
   return "OTHER";
 }

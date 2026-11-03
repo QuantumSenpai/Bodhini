@@ -71,10 +71,12 @@ function fixOcrConfusionsInDigits(run: string): string {
   return result;
 }
 
+const EPIC_PATTERN = /^[A-Za-z0185]{3}\d{7}$/;
+
 function normalizeDigitRuns(text: string): string {
   return text.replace(/[\w\W]{8,12}/g, (run) => {
     const digitCount = (run.match(/\d/g) || []).length;
-    if (digitCount >= 8 && run.length >= 8 && run.length <= 12) {
+    if (digitCount >= 8 && run.length >= 8 && run.length <= 12 && !EPIC_PATTERN.test(run)) {
       return fixOcrConfusionsInDigits(run);
     }
     return run;

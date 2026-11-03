@@ -12,6 +12,7 @@ import { recognizeText } from "./OcrTextRecognizer";
 import { resolveFieldKey } from "../../matching/field-synonyms";
 import { extractAadhaarFields } from "./aadhaarExtract";
 import { extractPanFields } from "./panExtract";
+import { extractVoterFields } from "./voterExtract";
 
 const LABELS: Record<FieldKey, string> = {
   FULL_NAME: "Full Name",
@@ -23,6 +24,7 @@ const LABELS: Record<FieldKey, string> = {
   PIN_CODE: "PIN Code",
   AADHAAR_NO: "Aadhaar Number",
   PAN_NO: "PAN Number",
+  EPIC_NO: "EPIC Number",
   PHONE: "Phone Number",
   EMAIL: "Email Address",
   OTHER: "Other",
@@ -74,6 +76,9 @@ function parseFields(text: string, documentType: DocumentAnalysis["type"], block
   }
   if (documentType === "PAN") {
     return extractPanFields(text, blocks);
+  }
+  if (documentType === "VOTER_ID") {
+    return extractVoterFields(text, blocks);
   }
 
   const lines = text
