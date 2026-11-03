@@ -13,7 +13,9 @@
         "foregroundImage": "./assets/images/bodhini-adaptive-foreground.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.Bodhini",
+      "package": "com.quantumsenpai.bodhini",
+      "versionCode": 1,
+      "allowBackup": false,
       "permissions": [
         "android.permission.CAMERA"
       ]
