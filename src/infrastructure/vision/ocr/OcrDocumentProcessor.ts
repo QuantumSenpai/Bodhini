@@ -11,6 +11,7 @@ import { classifyDocument } from "./DocumentClassifier";
 import { recognizeText } from "./OcrTextRecognizer";
 import { resolveFieldKey } from "../../matching/field-synonyms";
 import { extractAadhaarFields } from "./aadhaarExtract";
+import { extractPanFields } from "./panExtract";
 
 const LABELS: Record<FieldKey, string> = {
   FULL_NAME: "Full Name",
@@ -70,6 +71,9 @@ function findFollowingValue(lines: string[], index: number, documentType: Docume
 function parseFields(text: string, documentType: DocumentAnalysis["type"], blocks: { text: string; box: { x: number; y: number; width: number; height: number } }[]): ExtractedField[] {
   if (documentType === "AADHAAR") {
     return extractAadhaarFields(text, blocks);
+  }
+  if (documentType === "PAN") {
+    return extractPanFields(text, blocks);
   }
 
   const lines = text
