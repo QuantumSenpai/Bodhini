@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import { CreditCard, Ellipsis, FileText, Home, Plus } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
@@ -122,7 +122,7 @@ export function BodhiniTabBar({ state }: any) {
   const focusedIndex = tabs.findIndex((item) => item === activeRouteName);
 
   const handleTabPress = React.useCallback((routeName: TabRoute) => {
-    router.navigate((routeName === "index" ? "/(tabs)" : "/(tabs)/" + routeName) as any);
+    router.navigate((routeName === "index" ? "/(tabs)" : "/(tabs)/" + routeName) as Href);
   }, [router]);
 
   const handleScanPress = React.useCallback(() => {

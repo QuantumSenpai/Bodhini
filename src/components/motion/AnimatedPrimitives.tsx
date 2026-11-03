@@ -12,7 +12,9 @@ import Animated, {
 import { Check, Copy } from "lucide-react-native";
 import { useBodhini } from "../../state/AppContext";
 import { useTheme } from "../../theme/ThemeProvider";
-import { FadeInUp, PressableScale, useScreenFocused } from "./PressableScale";
+import { FadeInUp } from "./FadeInUp";
+import { PressableScale } from "./PressableScale";
+import { useScreenFocused } from "./useScreenFocused";
 
 export function ScanLine({
   color,
