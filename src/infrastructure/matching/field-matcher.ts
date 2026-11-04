@@ -4,6 +4,7 @@ import { FieldMatcher as IFieldMatcher } from "../../domain/document/document.po
 import { resolveFieldKey, isSignatureOrDeclarationLabel } from "./field-synonyms";
 import { ConfidencePolicy, PolicyEvaluation } from "./confidence-policy";
 import { canonicalValue } from "./canonical-value";
+import { detectDateFormat, formatDate, stripDateFormatHint } from "./date-format";
 
 export interface MatchedFieldDetail {
   field: FormField;
@@ -51,7 +52,7 @@ export class FieldMatcher implements IFieldMatcher {
         };
       }
 
-      const resolution = resolveFieldKey(field.label);
+      const resolution = resolveFieldKey(stripDateFormatHint(field.label));
 
       if (resolution) {
         const confirmedCandidates = confirmedFieldsByKey.get(resolution.key) ?? [];
@@ -74,7 +75,7 @@ export class FieldMatcher implements IFieldMatcher {
           const evaluation = ConfidencePolicy.evaluate(field, true, resolution.matchType);
           return {
             field,
-            value: confirmedField.field.value,
+            value: this.presentValue(field, resolution.key, confirmedField.field.value),
             confidence: evaluation.confidence,
             status: evaluation.status,
             matchedKey: resolution.key,
@@ -93,6 +94,13 @@ export class FieldMatcher implements IFieldMatcher {
         matchReason: evaluation.reason,
       };
     });
+  }
+
+  private presentValue(field: FormField, key: FieldKey, raw: string): string {
+    if (key !== "DOB" && field.type !== "DATE") return raw;
+    const format = detectDateFormat(field.label) ?? (field.instruction ? detectDateFormat(field.instruction) : null);
+    if (!format) return raw;
+    return formatDate(raw, format) ?? raw;
   }
 
   private indexConfirmedFields(docs: DocumentRecord[]): Map<FieldKey, ConfirmedField[]> {

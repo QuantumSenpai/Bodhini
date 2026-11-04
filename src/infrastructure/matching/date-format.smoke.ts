@@ -1,4 +1,4 @@
-import { detectDateFormat, formatDate, parseDateParts } from "./date-format";
+import { detectDateFormat, formatDate, parseDateParts, stripDateFormatHint } from "./date-format";
 
 let passCount = 0;
 let failCount = 0;
@@ -56,6 +56,15 @@ run("detect spaced pattern", () => detectDateFormat("DOB (DD / MM / YYYY)") === 
 run("no format in plain label", () => detectDateFormat("Date of Birth") === null);
 run("no format in unrelated label", () => detectDateFormat("Address") === null);
 run("word ending in dd is not a format", () => detectDateFormat("add/mm/yyyy") === null);
+
+run("strip bracketed hint", () => stripDateFormatHint("Date of Birth (DD/MM/YYYY)") === "Date of Birth");
+run("strip square bracket hint", () => stripDateFormatHint("Date of Birth [dd-mm-yyyy]") === "Date of Birth");
+run("strip bare hint", () => stripDateFormatHint("DOB dd-mm-yyyy") === "DOB");
+run("strip hint after dash", () => stripDateFormatHint("Date of Birth - DD/MM/YYYY") === "Date of Birth");
+run("strip year first hint", () => stripDateFormatHint("Date (YYYY-MM-DD)") === "Date");
+run("strip leaves plain label alone", () => stripDateFormatHint("Date of Birth:") === "Date of Birth:");
+run("strip ignores word ending in dd", () => stripDateFormatHint("add/mm/yyyy") === "add/mm/yyyy");
+run("strip keeps label when only a hint", () => stripDateFormatHint("(DD/MM/YYYY)") === "(DD/MM/YYYY)");
 
 console.log(`\nPASS: ${passCount}, FAIL: ${failCount}`);
 process.exit(failCount > 0 ? 1 : 0);

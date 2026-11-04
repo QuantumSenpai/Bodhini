@@ -91,3 +91,13 @@ export function detectDateFormat(label: string): DateFormat | null {
   }
   return null;
 }
+
+const HINT_BRACKETED = /[(\[]\s*(?:d{2}\s*([\/\-.])\s*m{2}\s*\1\s*y{4}|y{4}\s*([\/\-.])\s*m{2}\s*\2\s*d{2})\s*[)\]]/gi;
+const HINT_BARE = /\b(?:d{2}\s*([\/\-.])\s*m{2}\s*\1\s*y{4}|y{4}\s*([\/\-.])\s*m{2}\s*\2\s*d{2})\b/gi;
+
+export function stripDateFormatHint(label: string): string {
+  const out = label.replace(HINT_BRACKETED, " ").replace(HINT_BARE, " ");
+  if (out === label) return label;
+  const cleaned = out.replace(/\s+/g, " ").replace(/[\s:\-,;]+$/, "").trim();
+  return cleaned.length > 0 ? cleaned : label;
+}
