@@ -17,6 +17,8 @@ const LABELS: Record<FieldKey, string> = {
   DL_NO: "Driving Licence Number",
   BLOOD_GROUP: "Blood Group",
   VALIDITY: "Validity",
+  PLACE_OF_BIRTH: "Place of Birth",
+  REGISTRATION_NO: "Registration Number",
   PHONE: "Phone Number",
   EMAIL: "Email Address",
   OTHER: "Other",

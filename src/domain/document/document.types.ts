@@ -38,6 +38,8 @@ export type FieldKey =
   | "DL_NO"
   | "BLOOD_GROUP"
   | "VALIDITY"
+  | "PLACE_OF_BIRTH"
+  | "REGISTRATION_NO"
   | "PHONE"
   | "EMAIL"
   | "OTHER";

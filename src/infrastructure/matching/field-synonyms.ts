@@ -216,6 +216,9 @@ export const FIELD_SYNONYMS: Record<FieldKey, string[]> = {
   BLOOD_GROUP: [],
   VALIDITY: [],
 
+  PLACE_OF_BIRTH: [],
+  REGISTRATION_NO: [],
+
   OTHER: [],
 };
 

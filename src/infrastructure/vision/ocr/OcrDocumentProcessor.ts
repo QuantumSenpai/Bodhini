@@ -14,6 +14,7 @@ import { extractAadhaarFields } from "./aadhaarExtract";
 import { extractPanFields } from "./panExtract";
 import { extractVoterFields } from "./voterExtract";
 import { extractDlFields } from "./dlExtract";
+import { extractBirthFields } from "./birthExtract";
 
 const LABELS: Record<FieldKey, string> = {
   FULL_NAME: "Full Name",
@@ -29,6 +30,8 @@ const LABELS: Record<FieldKey, string> = {
   DL_NO: "Driving Licence Number",
   BLOOD_GROUP: "Blood Group",
   VALIDITY: "Validity",
+  PLACE_OF_BIRTH: "Place of Birth",
+  REGISTRATION_NO: "Registration Number",
   PHONE: "Phone Number",
   EMAIL: "Email Address",
   OTHER: "Other",
@@ -86,6 +89,9 @@ function parseFields(text: string, documentType: DocumentAnalysis["type"], block
   }
   if (documentType === "DRIVING_LICENCE") {
     return extractDlFields(text, blocks);
+  }
+  if (documentType === "BIRTH_CERTIFICATE") {
+    return extractBirthFields(text, blocks);
   }
 
   const lines = text

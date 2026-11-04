@@ -44,6 +44,10 @@ check("ration card with DL-like token returns RATION_CARD", classifyDocument("Ra
 check("Aadhaar text still AADHAAR", classifyDocument("Aadhaar Card Government of India 291837465026"), "AADHAAR");
 check("PAN text still PAN", classifyDocument("PAN Card Income Tax Department ABCDE1234F"), "PAN");
 check("Voter text still VOTER_ID", classifyDocument("ELECTION COMMISSION OF INDIA Elector Photo Identity Card ABC1234567"), "VOTER_ID");
+check("Birth Certificate with Date of Birth Father Name Registration returns BIRTH_CERTIFICATE", classifyDocument("Birth Certificate Date of Birth 15/08/1985 Father's Name SURESH KUMAR Registration No REG123456"), "BIRTH_CERTIFICATE");
+check("Birth Certificate with valid Aadhaar still BIRTH_CERTIFICATE", classifyDocument("Birth Certificate 291837465026 Date of Birth 15/08/1985"), "BIRTH_CERTIFICATE");
+check("Birth Certificate not VOTER_ID", classifyDocument("Birth Certificate Date of Birth 15/08/1985 Father's Name SURESH KUMAR"), "BIRTH_CERTIFICATE");
+check("Birth Certificate not DRIVING_LICENCE", classifyDocument("Birth Certificate Date of Birth 15/08/1985"), "BIRTH_CERTIFICATE");
 
 console.log(`\nPASS: ${passCount}, FAIL: ${failCount}`);
 process.exit(failCount > 0 ? 1 : 0);
