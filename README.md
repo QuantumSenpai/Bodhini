@@ -8,7 +8,7 @@
 ![Expo](https://img.shields.io/badge/Expo_SDK-58-000020?style=for-the-badge&logo=expo&logoColor=white)
 ![React Native](https://img.shields.io/badge/React_Native-0.88-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![Local first](https://img.shields.io/badge/data-stays_on_device-2E7D32?style=for-the-badge)
+![OCR](https://img.shields.io/badge/OCR-runs_on_device-2E7D32?style=for-the-badge)
 ![Hack Day](https://img.shields.io/badge/AKI_HACKS_x_Hacktoberfest-Winner-F59E08?style=for-the-badge)
 
 **Your personal document companion.**
@@ -52,9 +52,10 @@ The name comes from the Sanskrit word for knowing and understanding.
 | 🧠 | **On-device OCR** | Google ML Kit text recognition. The photo is not sent anywhere to be read. |
 | 🪪 | **Aadhaar extraction** | Handles the PVC card front and the e-Aadhaar letter. Reads name, date of birth, gender, number, address, PIN and care-of name. |
 | 🔢 | **Checksum validation** | Aadhaar numbers are checked with the Verhoeff algorithm. VID and enrolment numbers are ignored, not mistaken for the Aadhaar number. |
+| 🗃️ | **More documents** | PAN, Voter ID, Driving Licence, Birth Certificate and Ration Card extractors. Tested on made-up samples only, real card photos are not tested yet. |
 | 🕶️ | **Masked by default** | Aadhaar numbers show only the last four digits. A show and hide eye reveals the rest when you choose to. |
 | 🗂️ | **Wallet** | Saved documents as colored cards with a detail screen, delete with confirmation, and an empty state that points to the scan button. |
-| 📝 | **Smart form fill** | Reads the labels on a form, matches them to your saved fields, and marks each one as matched, needs review, or missing. Signature and declaration fields are always skipped. |
+| 📝 | **Smart form fill** | Reads the labels on a form, matches them to your saved fields, and marks each one as matched, needs review, or missing. Low-confidence matches need a Confirm tap before they are copied. Signature and declaration fields are always skipped. |
 | 📋 | **Copy list** | A clean list of values to copy into the form, with a Copied confirmation. |
 | 💬 | **Long-press help** | Hold any button for a moment and a short tip explains what it does. |
 | 🌗 | **Light and dark** | System, light and dark modes with a smooth cross-fade. |
@@ -200,11 +201,10 @@ Open the app on the phone and connect to the Metro server shown in the terminal.
 ### 🧪 Checks
 
 ```text
-npx tsc --noEmit
-npx tsx test/backend-b.synthetic.test.ts
-npx tsx src/infrastructure/validation/validation.smoke.ts
-npx tsx src/infrastructure/vision/ocr/aadhaarExtract.smoke.ts
+npm run check
 ```
+
+This runs the type check, the style check, the backend tests and every smoke test.
 
 All test data is synthetic. Please keep it that way.
 
@@ -240,7 +240,10 @@ All test data is synthetic. Please keep it that way.
 - [x] Long-press help on controls
 - [ ] Hindi (Devanagari) OCR
 - [ ] Bengali OCR
-- [ ] More document types: PAN, birth certificate, marksheets
+- [x] PAN, Voter ID, Driving Licence, Birth Certificate and Ration Card extractors (made-up samples)
+- [ ] Test with real card photos
+- [ ] Airplane-mode offline test
+- [ ] Marksheets
 - [ ] PDF form import
 - [ ] Voice assistant
 - [ ] Optional encrypted cloud backup
