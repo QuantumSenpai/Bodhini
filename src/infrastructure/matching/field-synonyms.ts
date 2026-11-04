@@ -146,16 +146,26 @@ export const FIELD_SYNONYMS: Record<FieldKey, string[]> = {
     "epic number",
     "voter id",
     "voter id number",
+    "voter id no",
+    "voter card no",
     "elector photo identity card",
+    "elector photo identity card no",
     "epic card",
 
     "एपिक",
     "एपिक नंबर",
     "मतदाता पहचान पत्र",
+    "मतदाता पहचान पत्र संख्या",
+    "मतदाता पहचान पत्र नंबर",
+    "वोटर आईडी नंबर",
+    "ईपिक नंबर",
 
     "ইপিক",
     "ইপিক নম্বর",
     "নির্বাচক ফটো পরিচয়পত্র",
+    "ভোটার আইডি নম্বর",
+    "ভোটার পরিচয়পত্র নম্বর",
+    "এপিক নম্বর",
   ],
 
   PAN_NO: [
@@ -212,14 +222,100 @@ export const FIELD_SYNONYMS: Record<FieldKey, string[]> = {
     "ই মেইল",
   ],
 
-  DL_NO: [],
-  BLOOD_GROUP: [],
-  VALIDITY: [],
+  DL_NO: [
 
-  PLACE_OF_BIRTH: [],
-  REGISTRATION_NO: [],
-  RATION_NO: [],
-  CATEGORY: [],
+    "driving licence no",
+    "driving license number",
+    "dl no",
+    "licence no",
+    "license number",
+
+    "ड्राइविंग लाइसेंस नंबर",
+    "ड्राइविंग लाइसेंस संख्या",
+    "लाइसेंस नंबर",
+    "डीएल नंबर",
+
+    "ড্রাইভিং লাইসেন্স নম্বর",
+    "লাইসেন্স নম্বর",
+    "ডিএল নম্বর",
+  ],
+
+  BLOOD_GROUP: [
+
+    "blood group",
+    "blood type",
+
+    "रक्त समूह",
+    "ब्लड ग्रुप",
+
+    "রক্তের গ্রুপ",
+    "ব্লাড গ্রুপ",
+  ],
+
+  VALIDITY: [
+
+    "validity",
+    "valid upto",
+    "valid till",
+    "expiry date",
+
+    "वैधता",
+    "वैध तिथि तक",
+    "समाप्ति तिथि",
+
+    "বৈধতা",
+    "মেয়াদ",
+    "মেয়াদ শেষের তারিখ",
+  ],
+
+  PLACE_OF_BIRTH: [
+
+    "place of birth",
+    "birth place",
+
+    "जन्म स्थान",
+    "जन्म स्थल",
+
+    "জন্মস্থান",
+  ],
+
+  REGISTRATION_NO: [
+
+    "birth registration no",
+    "birth registration number",
+
+    "जन्म पंजीकरण संख्या",
+    "जन्म पंजीकरण नंबर",
+
+    "জন্ম নিবন্ধন নম্বর",
+  ],
+
+  RATION_NO: [
+
+    "ration card no",
+    "ration card number",
+    "ration no",
+    "rc no",
+
+    "राशन कार्ड नंबर",
+    "राशन कार्ड संख्या",
+    "राशन कार्ड क्रमांक",
+
+    "রেশন কার্ড নম্বর",
+    "রেশন কার্ড নং",
+  ],
+
+  CATEGORY: [
+
+    "ration category",
+    "card type",
+
+    "राशन श्रेणी",
+    "कार्ड प्रकार",
+
+    "রেশন শ্রেণি",
+    "কার্ডের ধরন",
+  ],
 
   OTHER: [],
 };
