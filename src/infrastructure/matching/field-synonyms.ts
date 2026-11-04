@@ -3,6 +3,7 @@ import { FieldKey } from "../../domain/document/document.types";
 export const FIELD_SYNONYMS: Record<FieldKey, string[]> = {
   FULL_NAME: [
 
+    "পূর্ণ নাম",
     "applicants name",
     "नाम",
     "নাম",

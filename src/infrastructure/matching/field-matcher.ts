@@ -3,6 +3,7 @@ import { FormField, FilledField, FillStatus } from "../../domain/form/form.types
 import { FieldMatcher as IFieldMatcher } from "../../domain/document/document.ports";
 import { resolveFieldKey, isSignatureOrDeclarationLabel } from "./field-synonyms";
 import { ConfidencePolicy, PolicyEvaluation } from "./confidence-policy";
+import { canonicalValue } from "./canonical-value";
 
 export interface MatchedFieldDetail {
   field: FormField;
@@ -55,7 +56,7 @@ export class FieldMatcher implements IFieldMatcher {
       if (resolution) {
         const confirmedCandidates = confirmedFieldsByKey.get(resolution.key) ?? [];
         const usableCandidates = confirmedCandidates.filter((candidate) => candidate.field.value.trim().length > 0);
-        const distinctValues = new Set(usableCandidates.map((candidate) => candidate.field.value.trim().toLocaleLowerCase()));
+        const distinctValues = new Set(usableCandidates.map((candidate) => canonicalValue(resolution.key, candidate.field.value)));
 
         if (distinctValues.size > 1) {
           return {

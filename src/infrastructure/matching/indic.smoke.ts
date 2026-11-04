@@ -73,5 +73,7 @@ is("तारीख", null);
 run("Application Date is not DOB", () => key("Application Date") !== "DOB");
 run("आवेदन तिथि is not DOB", () => key("आवेदन तिथि") !== "DOB");
 
+is("পূর্ণ নাম", "FULL_NAME");
+
 console.log(`\nPASS: ${passCount}, FAIL: ${failCount}`);
 process.exit(failCount > 0 ? 1 : 0);
