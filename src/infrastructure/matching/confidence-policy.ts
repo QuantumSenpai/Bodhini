@@ -46,7 +46,7 @@ export class ConfidencePolicy {
       confidence = 0.9;
       reason = "Synonym match with confirmed document record";
     } else if (matchType === "partial") {
-      confidence = 0.75;
+      confidence = 0.7;
       reason = "Partial label match with confirmed document record";
     }
 

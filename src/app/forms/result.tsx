@@ -44,7 +44,6 @@ export default function FormResultScreen() {
     if (!copyableText.trim() || copyingAll) return;
     setCopyingAll(true);
     try {
-      const items = useMemo(() => services.formExporter.buildCopyItems(filledFields), [filledFields]);
       const sensitive = await clipboardService.copyMany(
         items.filter((item) => item.status === "FILLED").map((item) => ({
           key: (item.label.includes("Aadhaar") || item.label.includes("आधार") || item.label.includes("आधार")) ? "AADHAAR_NO" :
@@ -63,7 +62,7 @@ export default function FormResultScreen() {
     } finally {
       setCopyingAll(false);
     }
-  }, [filledFields, language, showToast, copyingAll]);
+  }, [filledFields, language, showToast, copyingAll, items]);
 
   const copySingle = useCallback(async (id: string, label: string, value: string, matchedKey?: string) => {
     if (!value.trim()) return;
