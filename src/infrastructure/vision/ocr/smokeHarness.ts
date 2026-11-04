@@ -22,4 +22,5 @@ export function makeBlock(text: string, x: number, y: number, w: number, h: numb
 
 export function report() {
   console.log(`\nPASS: ${passCount}, FAIL: ${failCount}`);
+  if (failCount > 0) process.exit(1);
 }
