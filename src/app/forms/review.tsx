@@ -79,6 +79,14 @@ export default function FormReviewScreen() {
     );
   }, [setFilledFields]);
 
+  const confirmField = useCallback((id: string) => {
+    setFilledFields((current) =>
+      current.map((item) =>
+        item.field.id === id && item.status === "FILLED" ? { ...item, confidence: 1 } : item,
+      ),
+    );
+  }, [setFilledFields]);
+
   const copyValue = useCallback(async (field: FilledField) => {
     if (field.status !== "FILLED" || !field.value) return;
     try {
@@ -268,7 +276,21 @@ export default function FormReviewScreen() {
                     </View>
 
                     <View style={styles.fieldFooterRow}>
-                      {item.status === "FILLED" && rawValue ? (
+                      {isLowConf && rawValue ? (
+                          <Hint hint={t(language, "confirmAnswer")} label={t(language, "confirmAnswer")}>
+                            <PressableScale
+                              onPress={() => confirmField(item.field.id)}
+                              accessibilityRole="button"
+                              accessibilityLabel={t(language, "confirmAnswer")}
+                              style={[styles.copyChip, { backgroundColor: colors.forestLight }]}
+                            >
+                              <Check size={14} color={colors.forest} strokeWidth={2.5} />
+                              <Text style={[styles.copyChipText, { color: colors.forest, fontSize: theme.typeScale.label.fontSize }]}>
+                                {t(language, "confirmAnswer")}
+                              </Text>
+                            </PressableScale>
+                          </Hint>
+                        ) : item.status === "FILLED" && rawValue ? (
                         <Hint hint={t(language, "hintCopyField")} label={isCopied ? t(language, "copied") : t(language, "copyAnswer")}>
                           <PressableScale
                             onPress={() => copyValue(item)}

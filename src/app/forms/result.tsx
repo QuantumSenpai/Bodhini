@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { CONFIDENCE_THRESHOLD } from "../../domain/constants";
 import { Alert, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Check, Copy, Eye, EyeOff, FileImage, FileText } from "lucide-react-native";
@@ -30,7 +31,7 @@ export default function FormResultScreen() {
     };
   }, []);
 
-  const items = useMemo(() => services.formExporter.buildCopyItems(filledFields), [filledFields]);
+  const items = useMemo(() => services.formExporter.buildCopyItems(filledFields.filter((f) => !(f.status === "FILLED" && f.confidence < CONFIDENCE_THRESHOLD))), [filledFields]);
   const copyableText = useMemo(
     () =>
       items
