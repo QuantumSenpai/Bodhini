@@ -3,6 +3,10 @@ import { FieldKey } from "../../domain/document/document.types";
 export const FIELD_SYNONYMS: Record<FieldKey, string[]> = {
   FULL_NAME: [
 
+    "applicants name",
+    "नाम",
+    "নাম",
+
     "full name",
     "applicant name",
     "candidate name",
@@ -85,6 +89,13 @@ export const FIELD_SYNONYMS: Record<FieldKey, string[]> = {
 
   ADDRESS: [
 
+    "address",
+    "correspondence address",
+    "postal address",
+    "पता",
+    "स्थायी पता",
+    "ঠিকানা",
+
     "permanent address",
     "residential address",
     "communication address",
@@ -101,6 +112,10 @@ export const FIELD_SYNONYMS: Record<FieldKey, string[]> = {
   ],
 
   PIN_CODE: [
+
+    "pin",
+    "पिन",
+    "পিন",
 
     "pin code",
     "pincode",
@@ -184,6 +199,11 @@ export const FIELD_SYNONYMS: Record<FieldKey, string[]> = {
   ],
 
   PHONE: [
+
+    "phone",
+    "phone no",
+    "फोन",
+    "ফোন",
 
     "phone number",
     "mobile",
@@ -365,7 +385,6 @@ const GENERIC_STANDALONE_WORDS = new Set([
   "code",
   "id",
   "card",
-  "address",
   "first",
   "last",
   "valid",
@@ -378,21 +397,15 @@ const GENERIC_STANDALONE_WORDS = new Set([
   "on",
   "serial",
   "application",
-  "phone",
-  "pin",
 
-  "नाम",
   "नंबर",
   "तारीख",
   "तिथि",
-  "पता",
   "कोड",
   "संख्या",
 
-  "নাম",
   "নম্বর",
   "তারিখ",
-  "ঠিকানা",
   "কোড",
   "সংখ্যা",
 ]);
@@ -506,7 +519,7 @@ export function normalizeLabel(label: string): string {
   return label
     .toLowerCase()
     .replace(/['’`]/g, "")
-    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/[^\p{L}\p{M}\p{N}\s]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
