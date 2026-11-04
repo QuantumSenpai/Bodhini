@@ -15,6 +15,7 @@ import { extractPanFields } from "./panExtract";
 import { extractVoterFields } from "./voterExtract";
 import { extractDlFields } from "./dlExtract";
 import { extractBirthFields } from "./birthExtract";
+import { extractRationFields } from "./rationExtract";
 
 const LABELS: Record<FieldKey, string> = {
   FULL_NAME: "Full Name",
@@ -32,6 +33,8 @@ const LABELS: Record<FieldKey, string> = {
   VALIDITY: "Validity",
   PLACE_OF_BIRTH: "Place of Birth",
   REGISTRATION_NO: "Registration Number",
+  RATION_NO: "Ration Card Number",
+  CATEGORY: "Category",
   PHONE: "Phone Number",
   EMAIL: "Email Address",
   OTHER: "Other",
@@ -92,6 +95,9 @@ function parseFields(text: string, documentType: DocumentAnalysis["type"], block
   }
   if (documentType === "BIRTH_CERTIFICATE") {
     return extractBirthFields(text, blocks);
+  }
+  if (documentType === "RATION_CARD") {
+    return extractRationFields(text, blocks);
   }
 
   const lines = text

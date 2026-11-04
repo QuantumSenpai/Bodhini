@@ -40,6 +40,8 @@ export type FieldKey =
   | "VALIDITY"
   | "PLACE_OF_BIRTH"
   | "REGISTRATION_NO"
+  | "RATION_NO"
+  | "CATEGORY"
   | "PHONE"
   | "EMAIL"
   | "OTHER";

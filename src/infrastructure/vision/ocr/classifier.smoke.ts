@@ -48,6 +48,9 @@ check("Birth Certificate with Date of Birth Father Name Registration returns BIR
 check("Birth Certificate with valid Aadhaar still BIRTH_CERTIFICATE", classifyDocument("Birth Certificate 291837465026 Date of Birth 15/08/1985"), "BIRTH_CERTIFICATE");
 check("Birth Certificate not VOTER_ID", classifyDocument("Birth Certificate Date of Birth 15/08/1985 Father's Name SURESH KUMAR"), "BIRTH_CERTIFICATE");
 check("Birth Certificate not DRIVING_LICENCE", classifyDocument("Birth Certificate Date of Birth 15/08/1985"), "BIRTH_CERTIFICATE");
+check("Ration Card with Head of Family and Category stays RATION_CARD", classifyDocument("Ration Card Head of Family SURESH KUMAR Category BPL"), "RATION_CARD");
+check("Ration Card with valid Aadhaar stays RATION_CARD", classifyDocument("Ration Card 291837465026 Head of Family SURESH KUMAR"), "RATION_CARD");
+check("Ration Card with Date of Birth and Father Name stays RATION_CARD", classifyDocument("Ration Card Date of Birth 15/08/1985 Father's Name SURESH KUMAR"), "RATION_CARD");
 
 console.log(`\nPASS: ${passCount}, FAIL: ${failCount}`);
 process.exit(failCount > 0 ? 1 : 0);

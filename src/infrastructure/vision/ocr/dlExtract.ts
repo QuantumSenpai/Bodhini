@@ -18,6 +18,8 @@ const LABELS: Record<FieldKey, string> = {
   VALIDITY: "Validity",
   PLACE_OF_BIRTH: "Place of Birth",
   REGISTRATION_NO: "Registration Number",
+  RATION_NO: "Ration Card Number",
+  CATEGORY: "Category",
   PHONE: "Phone Number",
   EMAIL: "Email Address",
   OTHER: "Other",

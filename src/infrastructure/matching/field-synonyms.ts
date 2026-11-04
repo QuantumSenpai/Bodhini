@@ -218,6 +218,8 @@ export const FIELD_SYNONYMS: Record<FieldKey, string[]> = {
 
   PLACE_OF_BIRTH: [],
   REGISTRATION_NO: [],
+  RATION_NO: [],
+  CATEGORY: [],
 
   OTHER: [],
 };
