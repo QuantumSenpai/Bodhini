@@ -37,6 +37,13 @@ check("ration card text unchanged", classifyDocument("Ration Card 291837465026")
 check("ration card with EPIC-like token returns RATION_CARD", classifyDocument("Ration Card WBA1234567"), "RATION_CARD");
 check("birth certificate with EPIC-like token returns BIRTH_CERTIFICATE", classifyDocument("Birth Certificate WBA1234567"), "BIRTH_CERTIFICATE");
 check("Voter ID with Date of Birth and Sex returns VOTER_ID", classifyDocument("ELECTION COMMISSION OF INDIA Elector Name SURESH KUMAR Date of Birth 15/08/1985 Sex MALE ABC1234567"), "VOTER_ID");
+check("DL text returns DRIVING_LICENCE", classifyDocument("Driving Licence DL0720191234567"), "DRIVING_LICENCE");
+check("DL token with garbled heading returns DRIVING_LICENCE", classifyDocument("XYZ123 DL0720191234567 random text"), "DRIVING_LICENCE");
+check("Voter text with Date of Birth still VOTER_ID", classifyDocument("ELECTION COMMISSION OF INDIA Elector Name SURESH KUMAR Date of Birth 15/08/1985 Sex MALE ABC1234567"), "VOTER_ID");
+check("ration card with DL-like token returns RATION_CARD", classifyDocument("Ration Card DL0720191234567"), "RATION_CARD");
+check("Aadhaar text still AADHAAR", classifyDocument("Aadhaar Card Government of India 291837465026"), "AADHAAR");
+check("PAN text still PAN", classifyDocument("PAN Card Income Tax Department ABCDE1234F"), "PAN");
+check("Voter text still VOTER_ID", classifyDocument("ELECTION COMMISSION OF INDIA Elector Photo Identity Card ABC1234567"), "VOTER_ID");
 
 console.log(`\nPASS: ${passCount}, FAIL: ${failCount}`);
 process.exit(failCount > 0 ? 1 : 0);

@@ -212,6 +212,10 @@ export const FIELD_SYNONYMS: Record<FieldKey, string[]> = {
     "ই মেইল",
   ],
 
+  DL_NO: [],
+  BLOOD_GROUP: [],
+  VALIDITY: [],
+
   OTHER: [],
 };
 

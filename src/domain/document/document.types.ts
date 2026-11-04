@@ -17,6 +17,7 @@ export type DocumentType =
   | "AADHAAR"
   | "PAN"
   | "VOTER_ID"
+  | "DRIVING_LICENCE"
   | "BIRTH_CERTIFICATE"
   | "RATION_CARD"
   | "MARKSHEET"
@@ -34,6 +35,9 @@ export type FieldKey =
   | "AADHAAR_NO"
   | "PAN_NO"
   | "EPIC_NO"
+  | "DL_NO"
+  | "BLOOD_GROUP"
+  | "VALIDITY"
   | "PHONE"
   | "EMAIL"
   | "OTHER";

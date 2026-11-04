@@ -13,6 +13,7 @@ import { resolveFieldKey } from "../../matching/field-synonyms";
 import { extractAadhaarFields } from "./aadhaarExtract";
 import { extractPanFields } from "./panExtract";
 import { extractVoterFields } from "./voterExtract";
+import { extractDlFields } from "./dlExtract";
 
 const LABELS: Record<FieldKey, string> = {
   FULL_NAME: "Full Name",
@@ -25,6 +26,9 @@ const LABELS: Record<FieldKey, string> = {
   AADHAAR_NO: "Aadhaar Number",
   PAN_NO: "PAN Number",
   EPIC_NO: "EPIC Number",
+  DL_NO: "Driving Licence Number",
+  BLOOD_GROUP: "Blood Group",
+  VALIDITY: "Validity",
   PHONE: "Phone Number",
   EMAIL: "Email Address",
   OTHER: "Other",
@@ -79,6 +83,9 @@ function parseFields(text: string, documentType: DocumentAnalysis["type"], block
   }
   if (documentType === "VOTER_ID") {
     return extractVoterFields(text, blocks);
+  }
+  if (documentType === "DRIVING_LICENCE") {
+    return extractDlFields(text, blocks);
   }
 
   const lines = text

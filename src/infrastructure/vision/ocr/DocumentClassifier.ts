@@ -20,6 +20,12 @@ function hasValidEpic(text: string): boolean {
   return matches.some((m) => /^[A-Z]{3}\d{7}$/.test(m));
 }
 
+function hasValidDl(text: string): boolean {
+  const matches = text.match(/\b[A-Z]{2}[ -]?[0-9]{2}[ -]?(19|20)[0-9]{2}[0-9]{7}\b/g);
+  if (!matches) return false;
+  return matches.some((m) => /^[A-Z]{2}[0-9]{13}$/.test(m.replace(/[ -]/g, "")));
+}
+
 export function classifyDocument(text: string): DocumentType {
   const lower = text.toLowerCase();
 
@@ -45,7 +51,11 @@ export function classifyDocument(text: string): DocumentType {
   if (lower.includes("election commission of india") || lower.includes("elector photo identity")) {
     return "VOTER_ID";
   }
+  if (lower.includes("driving licence") || lower.includes("driving license") || (lower.includes("union of india") && lower.includes("motor vehicles"))) {
+    return "DRIVING_LICENCE";
+  }
   if (hasAadhaarNumber(text)) return "AADHAAR";
   if (hasValidEpic(text)) return "VOTER_ID";
+  if (hasValidDl(text)) return "DRIVING_LICENCE";
   return "OTHER";
 }
