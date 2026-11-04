@@ -106,5 +106,17 @@ run("EPIC token with OCR-like confusions is not rewritten by digit fixer", () =>
   return rows[0].text === "0BC1234567";
 });
 
+run("alphanumeric ration token is not rewritten by digit fixer", () => {
+  const blocks: OcrBlock[] = [makeBlock("WB1234567890", 10, 10, 100, 20)];
+  const rows = buildLines(blocks);
+  return rows[0].text === "WB1234567890";
+});
+
+run("spaced Aadhaar with O confusion is still repaired", () => {
+  const blocks: OcrBlock[] = [makeBlock("2918 3746 5O26", 10, 10, 100, 20)];
+  const rows = buildLines(blocks);
+  return rows[0].text === "2918 3746 5026";
+});
+
 console.log(`\nPASS: ${passCount}, FAIL: ${failCount}`);
 if (failCount > 0) process.exit(1);
