@@ -30,6 +30,7 @@ import { fieldKeyLabel, t } from "../../i18n/translations";
 import { FadeInUp, Hint, PressableScale } from "../../components/motion";
 import { useTheme } from "../../theme/ThemeProvider";
 import { clipboardService } from "../../infrastructure/export/clipboardService";
+import { filledFieldKey } from "../../infrastructure/export/copy-key";
 import { displayValue } from "../../infrastructure/export/fieldDisplay";
 
 function statusLabel(field: FilledField, language: "en" | "bn" | "hi"): string {
@@ -90,9 +91,7 @@ export default function FormReviewScreen() {
   const copyValue = useCallback(async (field: FilledField) => {
     if (field.status !== "FILLED" || !field.value) return;
     try {
-      const isAadhaar = field.matchedKey === "AADHAAR_NO";
-      const isPan = field.matchedKey === "PAN_NO";
-      const key = isAadhaar ? "AADHAAR_NO" : isPan ? "PAN_NO" : "OTHER";
+      const key = filledFieldKey(field) ?? "OTHER";
       const sensitive = await clipboardService.copy(key, field.value);
       if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
       setCopiedId(field.field.id);
@@ -188,7 +187,7 @@ export default function FormReviewScreen() {
       <View style={styles.fieldsWrap}>
         {filledFields.map((item, index) => {
           const isSkipped = item.status === "SKIPPED";
-          const isAadhaar = item.matchedKey === "AADHAAR_NO" || item.field.key === "AADHAAR_NO";
+          const isAadhaar = filledFieldKey(item) === "AADHAAR_NO";
           const rawValue = item.value ?? "";
           const isEditingThisAadhaar = editingAadhaarId === item.field.id;
           const displayValue =

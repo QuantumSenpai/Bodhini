@@ -1,5 +1,8 @@
 import { createCopier } from "./copier";
 import { displayValue } from "./fieldDisplay";
+import { CopyListBuilder } from "./copy-list-builder";
+import { copyItemKey, filledFieldKey } from "./copy-key";
+import type { FilledField } from "../../domain/form/form.types";
 
 let passCount = 0;
 let failCount = 0;
@@ -152,6 +155,52 @@ async function main(): Promise<void> {
       { key: "DOB", value: "15/08/1985" },
     ]);
     return !sensitive && f.state.timers.size === 0;
+  });
+
+  await run("confirmed fuzzy Aadhaar and PAN keys arm sensitive clear in both copy paths", async () => {
+    const fields: FilledField[] = [
+      { field: { id: "a", label: "aadhaar numbr", type: "TEXT", required: true },
+        matchedKey: "AADHAAR_NO", value: AADHAAR, confidence: 1, status: "FILLED" },
+      { field: { id: "p", label: "pan numbr", type: "TEXT", required: true },
+        matchedKey: "PAN_NO", value: PAN, confidence: 1, status: "FILLED" },
+    ];
+    for (const field of fields) {
+      const f = makeFake();
+      const sensitive = await createCopier(f.deps).copy(filledFieldKey(field) ?? "OTHER", field.value!);
+      if (!sensitive || f.state.clip !== field.value || f.state.timers.size !== 1) return false;
+    }
+    const items = new CopyListBuilder().buildCopyItems(fields);
+    const f = makeFake();
+    const sensitive = await createCopier(f.deps).copyMany(items.map((item) => ({
+      key: copyItemKey(item), value: item.value,
+    })));
+    return sensitive && f.state.clip === `${DOTS}\n${PAN}` && f.state.timers.size === 1;
+  });
+
+  await run("legacy Aadhaar label with OTHER key keeps Copy All clear timer and raw payload", async () => {
+    const field: FilledField = {
+      field: { id: "legacy-a", label: "Aadhaar Number", key: "OTHER", type: "TEXT", required: true },
+      value: AADHAAR, confidence: 1, status: "FILLED",
+    };
+    const item = new CopyListBuilder().buildCopyItems([field])[0];
+    const key = copyItemKey(item);
+    const f = makeFake();
+    const sensitive = await createCopier(f.deps).copyMany([{ key, value: item.value }]);
+    return item.key === "OTHER" && item.value === AADHAAR &&
+      key === "AADHAAR_NO" && sensitive && f.state.clip === AADHAAR && f.state.timers.size === 1;
+  });
+
+  await run("legacy PAN label with OTHER key keeps Copy All clear timer and raw payload", async () => {
+    const field: FilledField = {
+      field: { id: "legacy-p", label: "PAN Number", key: "OTHER", type: "TEXT", required: true },
+      value: PAN, confidence: 1, status: "FILLED",
+    };
+    const item = new CopyListBuilder().buildCopyItems([field])[0];
+    const key = copyItemKey(item);
+    const f = makeFake();
+    const sensitive = await createCopier(f.deps).copyMany([{ key, value: item.value }]);
+    return item.key === "OTHER" && item.value === PAN &&
+      key === "PAN_NO" && sensitive && f.state.clip === PAN && f.state.timers.size === 1;
   });
 
   await run("error in set returns false", async () => {

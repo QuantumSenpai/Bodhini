@@ -51,6 +51,7 @@ export interface FilledField {
 export interface CopyItem {
   fieldId: string;
   label: string;
+  key?: FieldKey;
   value: string;
   status: FillStatus;
   order?: number;

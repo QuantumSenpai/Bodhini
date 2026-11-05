@@ -2,6 +2,7 @@ import { DocumentRecord, ExtractedField, FieldKey } from "../../domain/document/
 import { FormField, FilledField, FillStatus } from "../../domain/form/form.types";
 import { FieldMatcher as IFieldMatcher } from "../../domain/document/document.ports";
 import { resolveFieldKey, isSignatureOrDeclarationLabel } from "./field-synonyms";
+import { resolveFieldKeyFuzzy } from "./fuzzy-resolver";
 import { ConfidencePolicy, PolicyEvaluation } from "./confidence-policy";
 import { canonicalValue } from "./canonical-value";
 import { detectDateFormat, formatDate, stripDateFormatHint } from "./date-format";
@@ -26,6 +27,7 @@ export class FieldMatcher implements IFieldMatcher {
       value: d.value,
       confidence: d.confidence,
       status: d.status,
+      matchedKey: d.matchedKey,
       sourceDocumentId: d.sourceDocumentId,
       matchReason: d.matchReason,
     }));
@@ -52,7 +54,8 @@ export class FieldMatcher implements IFieldMatcher {
         };
       }
 
-      const resolution = resolveFieldKey(stripDateFormatHint(field.label));
+      const stripped = stripDateFormatHint(field.label);
+      const resolution = resolveFieldKey(stripped) ?? resolveFieldKeyFuzzy(stripped);
 
       if (resolution) {
         const confirmedCandidates = confirmedFieldsByKey.get(resolution.key) ?? [];

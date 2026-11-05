@@ -377,7 +377,7 @@ export const SIGNATURE_DECLARATION_KEYWORDS: string[] = [
   "টিপসই",
 ];
 
-const GENERIC_STANDALONE_WORDS = new Set([
+export const GENERIC_STANDALONE_WORDS = new Set([
   "no",
   "date",
   "number",
@@ -411,7 +411,7 @@ const GENERIC_STANDALONE_WORDS = new Set([
   "সংখ্যা",
 ]);
 
-const RELATIONAL_QUALIFIERS = [
+export const RELATIONAL_QUALIFIERS = [
   "father",
   "fathers",
   "mother",
@@ -459,7 +459,7 @@ const RELATIONAL_QUALIFIERS = [
   "সাক্ষী",
 ];
 
-const NON_DOB_QUALIFIERS = [
+export const NON_DOB_QUALIFIERS = [
   "application",
   "apply",
   "issue",
@@ -485,7 +485,7 @@ const NON_DOB_QUALIFIERS = [
   "নিবন্ধন",
 ];
 
-const NON_ID_NUMBER_QUALIFIERS = [
+export const NON_ID_NUMBER_QUALIFIERS = [
   "serial",
   "application",
   "roll",

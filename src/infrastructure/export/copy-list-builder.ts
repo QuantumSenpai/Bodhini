@@ -1,7 +1,7 @@
 import { FilledField, CopyItem, FormField } from "../../domain/form/form.types";
-import { FieldKey } from "../../domain/document/document.types";
 import { FormExporter } from "../../domain/document/document.ports";
 import { displayValue } from "./fieldDisplay";
+import { filledFieldKey } from "./copy-key";
 
 export class CopyListBuilder implements FormExporter {
   public buildCopyItems(fields: FilledField[]): CopyItem[] {
@@ -9,10 +9,11 @@ export class CopyListBuilder implements FormExporter {
       .filter((filled) => filled.status === "FILLED")
       .map((filled, index) => {
         const field = filled.field as FormField;
+        const key = filledFieldKey(filled);
         let displayValueResult = filled.value ?? "";
 
-        if (field.key === "AADHAAR_NO" && displayValueResult.trim().length > 0) {
-          displayValueResult = displayValue(field.key, displayValueResult, false);
+        if (key === "AADHAAR_NO" && displayValueResult.trim().length > 0) {
+          displayValueResult = displayValue(key, displayValueResult, false);
         }
 
         let instruction: string | undefined;
@@ -25,6 +26,7 @@ export class CopyListBuilder implements FormExporter {
         return {
           fieldId: field.id,
           label: field.label,
+          key,
           value: displayValueResult,
           status: filled.status,
           order: index + 1,

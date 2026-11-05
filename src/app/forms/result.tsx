@@ -12,6 +12,12 @@ import { AnimatedCheck, ConfettiFreeGlow, CopyMorphButton, Hint, PressableScale 
 import { useTheme } from "../../theme/ThemeProvider";
 import { clipboardService } from "../../infrastructure/export/clipboardService";
 import { displayValue } from "../../infrastructure/export/fieldDisplay";
+import { copyItemKey, filledFieldKey } from "../../infrastructure/export/copy-key";
+import type { FilledField } from "../../domain/form/form.types";
+
+function canCopy(field: FilledField): boolean {
+  return field.status === "FILLED" && field.confidence >= CONFIDENCE_THRESHOLD && Boolean(field.value?.trim());
+}
 
 export default function FormResultScreen() {
   const router = useRouter();
@@ -31,7 +37,7 @@ export default function FormResultScreen() {
     };
   }, []);
 
-  const items = useMemo(() => services.formExporter.buildCopyItems(filledFields.filter((f) => !(f.status === "FILLED" && f.confidence < CONFIDENCE_THRESHOLD))), [filledFields]);
+  const items = useMemo(() => services.formExporter.buildCopyItems(filledFields.filter(canCopy)), [filledFields]);
   const copyableText = useMemo(
     () =>
       items
@@ -47,8 +53,7 @@ export default function FormResultScreen() {
     try {
       const sensitive = await clipboardService.copyMany(
         items.filter((item) => item.status === "FILLED").map((item) => ({
-          key: (item.label.includes("Aadhaar") || item.label.includes("आधार") || item.label.includes("आधार")) ? "AADHAAR_NO" :
-               (item.label.includes("PAN") || item.label.includes("पैन")) ? "PAN_NO" : "OTHER",
+          key: copyItemKey(item),
           value: item.value,
         }))
       );
@@ -65,13 +70,13 @@ export default function FormResultScreen() {
     }
   }, [filledFields, language, showToast, copyingAll, items]);
 
-  const copySingle = useCallback(async (id: string, label: string, value: string, matchedKey?: string) => {
-    if (!value.trim()) return;
+  const copySingle = useCallback(async (field: FilledField) => {
+    if (!canCopy(field) || !field.value) return;
     try {
-      const key = matchedKey === "AADHAAR_NO" ? "AADHAAR_NO" : matchedKey === "PAN_NO" ? "PAN_NO" : "OTHER";
-      const sensitive = await clipboardService.copy(key, value);
+      const key = filledFieldKey(field) ?? "OTHER";
+      const sensitive = await clipboardService.copy(key, field.value);
       if (itemTimerRef.current) clearTimeout(itemTimerRef.current);
-      setCopiedItemId(id);
+      setCopiedItemId(field.field.id);
       showToast(sensitive ? t(language, "copiedSensitive") : t(language, "copied"));
       itemTimerRef.current = setTimeout(() => {
         setCopiedItemId(null);
@@ -102,7 +107,7 @@ export default function FormResultScreen() {
         </Text>
         {filledFields.map((field, index) => {
           const rawValue = field.value ?? "";
-          const isAadhaar = field.matchedKey === "AADHAAR_NO" || field.field.key === "AADHAAR_NO";
+          const isAadhaar = filledFieldKey(field) === "AADHAAR_NO";
           const revealThis = revealAadhaarId === field.field.id;
           const display = isAadhaar && rawValue ? displayValue("AADHAAR_NO", rawValue, revealThis) : rawValue;
           const isCopied = copiedItemId === field.field.id;
@@ -142,34 +147,38 @@ export default function FormResultScreen() {
                       </PressableScale>
                     </Hint>
                   ) : null}
-                  <Hint
-                    hint={t(language, "hintCopyField")}
-                    label={isCopied ? t(language, "copied") : t(language, "copyAnswer")}
-                  >
-                    <PressableScale
-                      onPress={() => copySingle(field.field.id, field.field.label, rawValue, isAadhaar ? "AADHAAR_NO" : field.matchedKey)}
-                      accessibilityRole="button"
-                      accessibilityLabel={isCopied ? t(language, "copied") : t(language, "copyAnswer")}
-                      style={[
-                        styles.rowCopyBtn,
-                        { backgroundColor: isCopied ? colors.successLight : colors.forestLight },
-                      ]}
+                  {canCopy(field) ? (
+                    <Hint
+                      hint={t(language, "hintCopyField")}
+                      label={isCopied ? t(language, "copied") : t(language, "copyAnswer")}
                     >
-                      {isCopied ? (
-                        <Check size={14} color={colors.success} strokeWidth={2.5} />
-                      ) : (
-                        <Copy size={14} color={colors.forest} />
-                      )}
-                      <Text
+                      <PressableScale
+                        onPress={() => copySingle(field)}
+                        accessibilityRole="button"
+                        accessibilityLabel={isCopied ? t(language, "copied") : t(language, "copyAnswer")}
                         style={[
-                          styles.rowCopyText,
-                          { color: isCopied ? colors.success : colors.forest, fontSize: theme.typeScale.label.fontSize },
+                          styles.rowCopyBtn,
+                          { backgroundColor: isCopied ? colors.successLight : colors.forestLight },
                         ]}
                       >
-                        {isCopied ? t(language, "copied") : t(language, "copyAnswer")}
-                      </Text>
-                    </PressableScale>
-                  </Hint>
+                        {isCopied ? (
+                          <Check size={14} color={colors.success} strokeWidth={2.5} />
+                        ) : (
+                          <Copy size={14} color={colors.forest} />
+                        )}
+                        <Text
+                          style={[
+                            styles.rowCopyText,
+                            { color: isCopied ? colors.success : colors.forest, fontSize: theme.typeScale.label.fontSize },
+                          ]}
+                        >
+                          {isCopied ? t(language, "copied") : t(language, "copyAnswer")}
+                        </Text>
+                      </PressableScale>
+                    </Hint>
+                  ) : (
+                    <StatusPill label={t(language, "needsReview")} tone="gold" />
+                  )}
                 </View>
               ) : (
                 <StatusPill
