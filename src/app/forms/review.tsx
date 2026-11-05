@@ -32,6 +32,7 @@ import { useTheme } from "../../theme/ThemeProvider";
 import { clipboardService } from "../../infrastructure/export/clipboardService";
 import { filledFieldKey } from "../../infrastructure/export/copy-key";
 import { displayValue } from "../../infrastructure/export/fieldDisplay";
+import { confirmReviewField, editReviewField, reviewFieldExplanation } from "../../state/form-review-explanation";
 
 function statusLabel(field: FilledField, language: "en" | "bn" | "hi"): string {
   if (field.status === "SKIPPED") return t(language, "skipped");
@@ -68,14 +69,7 @@ export default function FormReviewScreen() {
   const updateField = useCallback((id: string, value: string) => {
     setFilledFields((current) =>
       current.map((item) => {
-        if (item.field.id !== id || item.status === "SKIPPED") return item;
-        const trimmed = value.trim();
-        return {
-          ...item,
-          value,
-          status: trimmed ? "FILLED" : "NEEDS_USER",
-          confidence: trimmed ? 1 : 0,
-        };
+        return item.field.id === id ? editReviewField(item, value) : item;
       }),
     );
   }, [setFilledFields]);
@@ -83,7 +77,7 @@ export default function FormReviewScreen() {
   const confirmField = useCallback((id: string) => {
     setFilledFields((current) =>
       current.map((item) =>
-        item.field.id === id && item.status === "FILLED" ? { ...item, confidence: 1 } : item,
+        item.field.id === id ? confirmReviewField(item) : item,
       ),
     );
   }, [setFilledFields]);
@@ -199,6 +193,7 @@ export default function FormReviewScreen() {
           const labelText = item.field.key
             ? fieldKeyLabel(language, item.field.key, item.field.label)
             : item.field.label;
+          const explanation = reviewFieldExplanation(item, language);
 
           return (
             <FadeInUp key={item.field.id} index={index + 2} maxAnimated={8}>
@@ -228,11 +223,13 @@ export default function FormReviewScreen() {
                   />
                 </View>
 
-                {isSkipped ? (
-                  <Text style={[styles.manualNote, { color: colors.secondaryText, fontSize: theme.typeScale.caption.fontSize }]}>
-                    {t(language, "manualComplete")}
+                {explanation ? (
+                  <Text style={{ color: colors.secondaryText, fontSize: theme.typeScale.caption.fontSize }}>
+                    {explanation}
                   </Text>
-                ) : (
+                ) : null}
+
+                {isSkipped ? null : (
                   <>
                     <View style={[styles.inputRow, { backgroundColor: colors.background, borderColor: colors.separator }]}>
                       <TextInput
@@ -248,6 +245,7 @@ export default function FormReviewScreen() {
                         placeholderTextColor={colors.secondaryText}
                         multiline={item.field.key === "ADDRESS"}
                         accessibilityLabel={labelText}
+                        accessibilityHint={explanation ?? undefined}
                         style={[
                           styles.textInput,
                           { color: colors.text, fontSize: theme.typeScale.bodyStrong.fontSize },
@@ -318,11 +316,11 @@ export default function FormReviewScreen() {
                             </Text>
                           </PressableScale>
                         </Hint>
-                      ) : (
-                        <Text style={[styles.missingNote, { color: colors.warning, fontSize: theme.typeScale.label.fontSize }]}>
-                          {t(language, "missingValue")}
+                      ) : !explanation ? (
+                        <Text style={{ color: colors.warning, fontSize: theme.typeScale.label.fontSize }}>
+                          {t(language, "enterAnswer")}
                         </Text>
-                      )}
+                      ) : null}
                     </View>
                   </>
                 )}
@@ -424,7 +422,7 @@ const styles = StyleSheet.create({
   },
   fieldTop: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
     gap: 8,
   },
@@ -466,12 +464,6 @@ const styles = StyleSheet.create({
   },
   copyChipText: {
     fontWeight: "700",
-  },
-  missingNote: {
-    lineHeight: 16,
-  },
-  manualNote: {
-    lineHeight: 18,
   },
   safety: {
     flexDirection: "row",

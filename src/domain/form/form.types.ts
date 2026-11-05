@@ -11,6 +11,16 @@ export type FormFieldType =
 
 export type FillStatus = "FILLED" | "NEEDS_USER" | "SKIPPED";
 
+export type MatchReasonCode =
+  | "exact"
+  | "synonym"
+  | "fuzzy"
+  | "conflict"
+  | "missingValue"
+  | "unknownField"
+  | "skipped"
+  | "manual";
+
 export interface Box {
   x: number;
   y: number;
@@ -46,6 +56,7 @@ export interface FilledField {
   matchedKey?: FieldKey;
 
   matchReason?: string;
+  matchReasonCode?: MatchReasonCode;
 }
 
 export interface CopyItem {

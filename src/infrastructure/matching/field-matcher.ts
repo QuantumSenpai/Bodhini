@@ -1,5 +1,5 @@
 import { DocumentRecord, ExtractedField, FieldKey } from "../../domain/document/document.types";
-import { FormField, FilledField, FillStatus } from "../../domain/form/form.types";
+import { FormField, FilledField, FillStatus, MatchReasonCode } from "../../domain/form/form.types";
 import { FieldMatcher as IFieldMatcher } from "../../domain/document/document.ports";
 import { resolveFieldKey, isSignatureOrDeclarationLabel } from "./field-synonyms";
 import { resolveFieldKeyFuzzy } from "./fuzzy-resolver";
@@ -14,6 +14,7 @@ export interface MatchedFieldDetail {
   status: FillStatus;
   matchedKey?: FieldKey;
   matchReason: string;
+  matchReasonCode: MatchReasonCode;
   sourceDocumentId?: string;
 }
 
@@ -30,6 +31,7 @@ export class FieldMatcher implements IFieldMatcher {
       matchedKey: d.matchedKey,
       sourceDocumentId: d.sourceDocumentId,
       matchReason: d.matchReason,
+      matchReasonCode: d.matchReasonCode,
     }));
   }
 
@@ -51,6 +53,7 @@ export class FieldMatcher implements IFieldMatcher {
           confidence: 0,
           status: "SKIPPED",
           matchReason: evaluation.reason,
+          matchReasonCode: "skipped",
         };
       }
 
@@ -70,6 +73,7 @@ export class FieldMatcher implements IFieldMatcher {
             confidence: 0,
             matchedKey: resolution.key,
             matchReason: "Conflicting confirmed values exist in more than one saved document. Choose the correct value manually.",
+            matchReasonCode: "conflict",
           };
         }
 
@@ -83,9 +87,21 @@ export class FieldMatcher implements IFieldMatcher {
             status: evaluation.status,
             matchedKey: resolution.key,
             matchReason: evaluation.reason,
+            matchReasonCode: resolution.matchType === "partial" ? "fuzzy" : resolution.matchType,
             sourceDocumentId: confirmedField.documentId,
           };
         }
+
+        const evaluation = ConfidencePolicy.evaluate(field, false);
+        return {
+          field,
+          value: null,
+          confidence: evaluation.confidence,
+          status: evaluation.status,
+          matchedKey: resolution.key,
+          matchReason: evaluation.reason,
+          matchReasonCode: "missingValue",
+        };
       }
 
       const evaluation = ConfidencePolicy.evaluate(field, false);
@@ -95,6 +111,7 @@ export class FieldMatcher implements IFieldMatcher {
         confidence: evaluation.confidence,
         status: evaluation.status,
         matchReason: evaluation.reason,
+        matchReasonCode: "unknownField",
       };
     });
   }
