@@ -18,6 +18,7 @@ export type MatchReasonCode =
   | "conflict"
   | "missingValue"
   | "unknownField"
+  | "aiSuggestion"
   | "skipped"
   | "manual";
 
