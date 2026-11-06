@@ -40,6 +40,12 @@ run("oversized responses fail before parsing", () =>
   !parseAiResponse(JSON.stringify({ suggestions: [], pad: "x".repeat(9000) }), batch).ok
 );
 
+run("multibyte responses are limited by UTF-8 bytes", () => {
+  const raw = JSON.stringify({ suggestions: [], pad: "বাংলা".repeat(700) });
+  const result = parseAiResponse(raw, batch);
+  return raw.length < 8192 && !result.ok && result.reason === "response_too_large";
+});
+
 run("unknown and duplicate IDs reject the whole response", () =>
   !parseAiResponse('{"suggestions":[{"id":"f9","action":"map","key":"FULL_NAME"}]}', batch).ok &&
   !parseAiResponse('{"suggestions":[{"id":"f0","action":"map","key":"FULL_NAME"},{"id":"f0","action":"map","key":"DOB"}]}', batch).ok

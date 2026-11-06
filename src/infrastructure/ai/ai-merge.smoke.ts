@@ -8,6 +8,9 @@ import { confirmReviewField, editReviewField } from "../../state/form-review-exp
 import { mergeAiSuggestions } from "./mergeSuggestions";
 import { parseAiResponse } from "./parseAiResponse";
 import { sanitizeLabels } from "./sanitizeLabels";
+import type { AiRequestScope } from "./aiTypes";
+
+const scope: AiRequestScope = { formSessionId: "form-a", revision: 0, attemptId: "attempt-1" };
 
 function form(id: string, label: string, type: FormField["type"] = "TEXT"): FormField {
   return { id, label, type, required: true };
@@ -25,7 +28,7 @@ function proposals(labels: { fieldId: string; label: string }[], wire: object) {
   if (!batch.ok) throw new Error("Bad synthetic request");
   const parsed = parseAiResponse(JSON.stringify(wire), batch);
   if (!parsed.ok) throw new Error("Bad synthetic response");
-  return parsed.suggestions;
+  return { scope, suggestions: parsed.suggestions };
 }
 
 run("AI key adds an unmapped proposal without filling or copy eligibility", () => {
@@ -33,7 +36,7 @@ run("AI key adds an unmapped proposal without filling or copy eligibility", () =
   const before = JSON.stringify(fields);
   const merged = mergeAiSuggestions(fields, proposals([
     { fieldId: "mystery", label: "Mystery Reference" },
-  ], { suggestions: [{ id: "f0", action: "map", key: "FULL_NAME" }] }));
+  ], { suggestions: [{ id: "f0", action: "map", key: "FULL_NAME" }] }), scope);
   return JSON.stringify(fields) === before && merged.length === 1 && merged[0].field.id === "mystery" &&
     merged[0].matchedKey === "FULL_NAME" && merged[0].matchReasonCode === "aiSuggestion" &&
     merged[0].status === "NEEDS_USER" && merged[0].value === null && merged[0].confidence < CONFIDENCE_THRESHOLD &&
@@ -53,7 +56,7 @@ run("exact value, missing-value key, confirmation, and local skip stay authorita
       { id: "f3", action: "map", key: "ADDRESS" },
     ],
   });
-  const merged = mergeAiSuggestions(local, suggested);
+  const merged = mergeAiSuggestions(local, suggested, scope);
   return merged.length === local.length && merged[0] === local[0] && merged[1] === local[1] &&
     merged[2] === local[2] && merged[0].value === "Asha Rao" &&
     merged[0].confidence >= CONFIDENCE_THRESHOLD && merged[1].matchedKey === "DOB" &&
@@ -70,7 +73,7 @@ run("manual completion actions use existing skip semantics", () => {
   ], { suggestions: [
     { id: "f0", action: "manual", type: "SIGNATURE" },
     { id: "f1", action: "manual", type: "DECLARATION" },
-  ] }));
+  ] }), scope);
   return fields.every((f) => f.status === "NEEDS_USER" && f.matchReasonCode === "unknownField") &&
     merged.every((f) => f.status === "SKIPPED" && f.value === null &&
     f.confidence === 0 && f.matchReasonCode === "skipped") &&
@@ -82,9 +85,31 @@ run("reapplying the same suggestion is repeatable and does not duplicate fields"
   const suggestion = proposals([{ fieldId: "unknown", label: "Mystery Reference" }], {
     suggestions: [{ id: "f0", action: "map", key: "PAN_NO" }],
   });
-  const once = mergeAiSuggestions(fields, suggestion);
-  const twice = mergeAiSuggestions(once, suggestion);
+  const once = mergeAiSuggestions(fields, suggestion, scope);
+  const twice = mergeAiSuggestions(once, suggestion, scope);
   return once.length === 1 && twice.length === 1 && JSON.stringify(once) === JSON.stringify(twice);
+});
+
+run("form session identity blocks an old response on a new identical form", () => {
+  const suggestion = proposals([{ fieldId: "ocr-form-1", label: "Mystery Reference" }], {
+    suggestions: [{ id: "f0", action: "map", key: "PAN_NO" }],
+  });
+  const original = new FieldMatcher().match([form("ocr-form-1", "Mystery Reference")], []);
+  const fresh = new FieldMatcher().match([form("ocr-form-1", "Mystery Reference")], []);
+  const accepted = mergeAiSuggestions(original, suggestion, scope);
+  const blocked = mergeAiSuggestions(fresh, suggestion, { ...scope, formSessionId: "form-b" });
+  return accepted[0].matchedKey === "PAN_NO" && blocked[0] === fresh[0] &&
+    blocked[0].matchedKey === undefined;
+});
+
+run("new revision and superseding attempt both block stale responses", () => {
+  const fields = new FieldMatcher().match([form("unknown", "Mystery Reference")], []);
+  const suggestion = proposals([{ fieldId: "unknown", label: "Mystery Reference" }], {
+    suggestions: [{ id: "f0", action: "map", key: "PAN_NO" }],
+  });
+  const revised = mergeAiSuggestions(fields, suggestion, { ...scope, revision: 1 });
+  const superseded = mergeAiSuggestions(fields, suggestion, { ...scope, attemptId: "attempt-2" });
+  return revised[0] === fields[0] && superseded[0] === fields[0];
 });
 
 run("later manual edit or changed label makes an in-flight suggestion stale", () => {
@@ -94,8 +119,8 @@ run("later manual edit or changed label makes an in-flight suggestion stale", ()
   });
   const edited = editReviewField(fields[0], "Asha Rao");
   const relabeled = { ...fields[0], field: { ...fields[0].field, label: "New label" } };
-  return mergeAiSuggestions([edited], suggestion)[0] === edited &&
-    mergeAiSuggestions([relabeled], suggestion)[0] === relabeled;
+  return mergeAiSuggestions([edited], suggestion, scope)[0] === edited &&
+    mergeAiSuggestions([relabeled], suggestion, scope)[0] === relabeled;
 });
 
 run("an earlier local decision is not replaced by an AI suggestion", () => {
@@ -104,7 +129,7 @@ run("an earlier local decision is not replaced by an AI suggestion", () => {
     suggestions: [{ id: "f0", action: "map", key: "PAN_NO" }],
   });
   const localDecision = { ...fields[0], matchedKey: "FULL_NAME" as FieldKey };
-  return mergeAiSuggestions([localDecision], suggestion)[0] === localDecision;
+  return mergeAiSuggestions([localDecision], suggestion, scope)[0] === localDecision;
 });
 
 run("a confirmed fuzzy saved value is never replaced", () => {
@@ -114,7 +139,7 @@ run("a confirmed fuzzy saved value is never replaced", () => {
     suggestions: [{ id: "f0", action: "map", key: "PAN_NO" }],
   });
   return fuzzy.confidence < CONFIDENCE_THRESHOLD && confirmed.confidence === 1 &&
-    mergeAiSuggestions([confirmed], suggestion)[0] === confirmed &&
+    mergeAiSuggestions([confirmed], suggestion, scope)[0] === confirmed &&
     confirmed.value === "Asha Rao" && confirmed.matchedKey === "FULL_NAME";
 });
 

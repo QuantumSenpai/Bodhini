@@ -6,11 +6,14 @@ export const MAX_LABEL_CHARS = 120;
 export const MAX_REQUEST_BYTES = 16384;
 
 const MASK = "[REDACTED]";
-const DIGIT = "0-9\u0966-\u096F\u09E6-\u09EF";
-const DATE = new RegExp(`(?:[${DIGIT}]{4}[./-][${DIGIT}]{1,2}[./-][${DIGIT}]{1,2}|[${DIGIT}]{1,2}[./-][${DIGIT}]{1,2}[./-][${DIGIT}]{2,4})`, "g");
-const LONG_DIGITS = new RegExp(`[${DIGIT}]{5,}`, "g");
-const PAN = /\b[A-Z]{5}[0-9]{4}[A-Z]\b/gi;
-const MONTH_DATE = /\b(?:\d{1,2}\s+(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+\d{2,4}|(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+\d{1,2},?\s+\d{2,4})\b/gi;
+const DIGIT = "\\p{Nd}";
+const SEPARATOR = "\\s*[./-]\\s*";
+const DATE = new RegExp(`(?:${DIGIT}{4}${SEPARATOR}${DIGIT}{1,2}${SEPARATOR}${DIGIT}{1,2}|${DIGIT}{1,2}${SEPARATOR}${DIGIT}{1,2}${SEPARATOR}${DIGIT}{2,4})`, "gu");
+const GROUPED_ID = new RegExp(`(^|[^${DIGIT}])((?:${DIGIT}{4}[ -]){2,3}${DIGIT}{4})(?!${DIGIT})`, "gu");
+const LONG_DIGITS = new RegExp(`${DIGIT}{5,}`, "gu");
+const PAN = /\b[A-Z]{5}\s*[0-9]{4}\s*[A-Z]\b/gi;
+const MONTH = "(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)";
+const MONTH_DATE = new RegExp(`(^|[^\\p{L}\\p{Nd}])(${DIGIT}{1,2}\\s+${MONTH}\\s+${DIGIT}{2,4}|${MONTH}\\s+${DIGIT}{1,2},?\\s+${DIGIT}{2,4})(?![\\p{L}\\p{Nd}])`, "giu");
 
 export function utf8ByteLength(value: string): number {
   let bytes = 0;
@@ -44,17 +47,22 @@ export function sanitizeLabels(input: readonly AiLabel[], language: AppLanguage)
     if (seenIds.has(item.fieldId)) return { ok: false, reason: "duplicate_field_id" };
     seenIds.add(item.fieldId);
 
-    const normalized = item.label.replace(/\s+/gu, " ").trim();
+    const normalized = item.label.normalize("NFKC").replace(/\s+/gu, " ").trim();
     if (Array.from(normalized).length > MAX_LABEL_CHARS) {
       return { ok: false, reason: "label_too_long" };
     }
     if (!normalized || normalized.includes("@")) continue;
 
     const masked = normalized.replace(PAN, MASK).replace(DATE, MASK)
-      .replace(MONTH_DATE, MASK).replace(LONG_DIGITS, MASK);
+      .replace(MONTH_DATE, (_match: string, prefix: string) => `${prefix}${MASK}`)
+      .replace(GROUPED_ID, (_match: string, prefix: string) => `${prefix}${MASK}`)
+      .replace(LONG_DIGITS, MASK);
     if (masked !== normalized) maskedCount++;
     if (maskedCount >= 3) return { ok: false, reason: "too_many_masked_labels" };
     if (!/[\p{L}]/u.test(masked.replace(/\[REDACTED\]/g, ""))) continue;
+    if (Array.from(masked).length > MAX_LABEL_CHARS) {
+      return { ok: false, reason: "label_too_long" };
+    }
 
     const id = `f${index}`;
     labels.push({ id, label: masked });

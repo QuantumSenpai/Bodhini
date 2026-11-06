@@ -1,5 +1,6 @@
 import type { AppLanguage } from "../../domain/document/document.types";
-import type { AiClientResult, AiLabel } from "./aiTypes";
+import { isValidAiScope } from "./aiTypes";
+import type { AiClientResult, AiLabel, AiRequestScope } from "./aiTypes";
 import { MAX_RESPONSE_BYTES, parseAiResponse } from "./parseAiResponse";
 import { sanitizeLabels } from "./sanitizeLabels";
 
@@ -43,8 +44,14 @@ export class AiFormClient {
     }
   }
 
-  async suggest(labels: readonly AiLabel[], language: AppLanguage, signal?: AbortSignal): Promise<AiClientResult> {
+  async suggest(labels: readonly AiLabel[], language: AppLanguage, scope: AiRequestScope, signal?: AbortSignal): Promise<AiClientResult> {
     if (signal?.aborted) return { status: "cancelled" };
+    if (!isValidAiScope(scope)) return { status: "rejected", reason: "invalid_scope" };
+    const requestScope = Object.freeze({
+      formSessionId: scope.formSessionId,
+      revision: scope.revision,
+      attemptId: scope.attemptId,
+    });
     const batch = sanitizeLabels(labels, language);
     if (!batch.ok) return { status: "rejected", reason: batch.reason };
     if (batch.request.labels.length === 0) return { status: "no_suggestions", suggestions: [] };
@@ -81,14 +88,17 @@ export class AiFormClient {
       }
       if (!response.ok) return { status: "failure", reason: "http" };
       const contentLength = response.headers?.get("content-length");
-      if (contentLength && Number(contentLength) > MAX_RESPONSE_BYTES) {
-        return { status: "failure", reason: "response" };
+      if (contentLength !== null && contentLength !== undefined) {
+        const lengthText = contentLength.trim();
+        if (!/^[0-9]+$/.test(lengthText) || Number(lengthText) > MAX_RESPONSE_BYTES) {
+          return { status: "failure", reason: "response" };
+        }
       }
       const raw = await Promise.race([response.text(), aborted]);
       const parsed = parseAiResponse(raw, batch);
       if (!parsed.ok) return { status: "failure", reason: "response" };
       if (parsed.suggestions.length === 0) return { status: "no_suggestions", suggestions: [] };
-      return { status: "suggestions", suggestions: parsed.suggestions };
+      return { status: "suggestions", scope: requestScope, suggestions: parsed.suggestions };
     } catch {
       if (outcome === "timeout") return { status: "timeout" };
       if (outcome === "cancelled" || signal?.aborted) return { status: "cancelled" };

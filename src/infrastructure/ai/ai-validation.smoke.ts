@@ -30,6 +30,16 @@ run("120 normalized characters are accepted and 121 rejected", () => {
     !rejected.ok && rejected.reason === "label_too_long";
 });
 
+run("transmitted label limit applies after masking expands the text", () => {
+  const atLimit = sanitizeLabels([{ fieldId: "a", label: "A".repeat(109) + " 12345" }], "en");
+  const overLimit = sanitizeLabels([{ fieldId: "a", label: "A".repeat(110) + " 12345" }], "en");
+  const oldBypass = sanitizeLabels([{ fieldId: "a", label: "A".repeat(114) + " 12345" }], "en");
+  return atLimit.ok && Array.from(atLimit.request.labels[0].label).length === MAX_LABEL_CHARS &&
+    utf8ByteLength(atLimit.body) <= MAX_REQUEST_BYTES &&
+    !overLimit.ok && overLimit.reason === "label_too_long" &&
+    !oldBypass.ok && oldBypass.reason === "label_too_long";
+});
+
 run("overall UTF-8 request size is bounded", () => {
   const labels = Array.from({ length: 40 }, (_, i) => ({ fieldId: `id-${i}`, label: "𐐀".repeat(120) }));
   const result = sanitizeLabels(labels, "bn");

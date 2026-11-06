@@ -1,6 +1,7 @@
 import type { FilledField } from "../../domain/form/form.types";
 import { FIELD_SYNONYMS, isSignatureOrDeclarationLabel } from "../matching/field-synonyms";
-import type { AiSuggestion } from "./aiTypes";
+import { isValidAiScope } from "./aiTypes";
+import type { AiRequestScope, AiSuggestionBatch } from "./aiTypes";
 
 const VALID_KEYS = new Set(Object.keys(FIELD_SYNONYMS).filter((key) => key !== "OTHER"));
 
@@ -14,7 +15,14 @@ function isEligible(field: FilledField, expectedLabel: string): boolean {
     !Boolean(field.field.instruction && isSignatureOrDeclarationLabel(field.field.instruction));
 }
 
-export function mergeAiSuggestions(fields: readonly FilledField[], suggestions: readonly AiSuggestion[]): FilledField[] {
+export function mergeAiSuggestions(
+  fields: readonly FilledField[], batch: AiSuggestionBatch, currentScope: AiRequestScope,
+): FilledField[] {
+  if (!batch || !isValidAiScope(batch.scope) || !isValidAiScope(currentScope) ||
+    batch.scope.formSessionId !== currentScope.formSessionId ||
+    batch.scope.revision !== currentScope.revision ||
+    batch.scope.attemptId !== currentScope.attemptId) return [...fields];
+  const suggestions = batch.suggestions;
   const fieldCounts = new Map<string, number>();
   for (const field of fields) {
     fieldCounts.set(field.field.id, (fieldCounts.get(field.field.id) ?? 0) + 1);
