@@ -1,0 +1,5 @@
+name = "bodhini-ai-proxy"
+main = "src/index.ts"
+compatibility_date = "2026-11-06"
+compatibility_flags = ["enable_request_signal"]
+workers_dev = false

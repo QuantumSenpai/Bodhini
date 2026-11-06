@@ -5,7 +5,7 @@ const path = require("node:path");
 const ts = require("typescript");
 
 const ROOT = path.resolve(__dirname, "..");
-const TARGET_DIRS = ["src", "test", "scripts"];
+const TARGET_DIRS = ["src", "test", "scripts", "worker"];
 const ROOT_CONFIG_FILES = ["babel.config.js", "metro.config.js", "tailwind.config.js", "tsconfig.json"];
 const EXTRA_FILES = ["README.md"];
 
