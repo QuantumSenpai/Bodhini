@@ -2,7 +2,7 @@ import { AiFormClient } from "../src/infrastructure/ai/AiFormClient";
 import type { AiFetch } from "../src/infrastructure/ai/AiFormClient";
 import { FieldMatcher } from "../src/infrastructure/matching/field-matcher";
 import type { ProxyClock, ProviderAdapter } from "./src/handler";
-import { ENDPOINT, PROVIDER_INSTRUCTION, PROVIDER_TIMEOUT_MS, handleProxy, serializeSuggestions } from "./src/handler";
+import { BODY_READ_TIMEOUT_MS, ENDPOINT, PROVIDER_INSTRUCTION, PROVIDER_TIMEOUT_MS, handleProxy, serializeSuggestions } from "./src/handler";
 import { readBoundedText } from "./src/boundedBody";
 import { utf8ByteLength } from "../src/infrastructure/ai/sanitizeLabels";
 
@@ -190,6 +190,80 @@ async function main(): Promise<void> {
     return [missing.status, low.status, declared.status].join(",") === "413,413,413" && calls === 0;
   });
 
+  await run("oversized declared length cancels unread body without waiting for cancel", async () => {
+    const clock = new FakeClock();
+    let calls = 0;
+    let cancellations = 0;
+    const stream = new ReadableStream<Uint8Array>({
+      cancel() { cancellations++; return new Promise<void>(() => undefined); },
+    });
+    const incoming = new Request(base, { method: "POST", headers: {
+      "content-type": "application/json", "content-length": "17000",
+    }, body: stream, duplex: "half" } as RequestInit);
+    let response: Response | undefined;
+    void handleProxy(incoming, async () => { calls++; return reply('{"suggestions":[]}'); }, clock)
+      .then((value) => { response = value; });
+    for (let i = 0; i < 20 && !response; i++) await Promise.resolve();
+    return response?.status === 413 && cancellations === 1 && calls === 0 &&
+      Array.from(clock.tasks).length === 0 && clock.cancelled === 1;
+  });
+
+  await run("body timeout does not wait for an uncooperative reader cancel", async () => {
+    const clock = new FakeClock();
+    let calls = 0;
+    let cancellations = 0;
+    const stream = new ReadableStream<Uint8Array>({
+      cancel() { cancellations++; return new Promise<void>(() => undefined); },
+    });
+    const incoming = new Request(base, { method: "POST", headers: { "content-type": "application/json" },
+      body: stream, duplex: "half" } as RequestInit);
+    let response: Response | undefined;
+    void handleProxy(incoming, async () => { calls++; return reply('{"suggestions":[]}'); }, clock)
+      .then((value) => { response = value; });
+    for (let i = 0; i < 20 && !stream.locked; i++) await Promise.resolve();
+    if (!stream.locked || clock.tasks.size !== 1) return false;
+    clock.fire();
+    for (let i = 0; i < 20 && !response; i++) await Promise.resolve();
+    return response?.status === 408 && cancellations === 1 && calls === 0 &&
+      !stream.locked && Array.from(clock.tasks).length === 0 && clock.cancelled === 1;
+  });
+
+  await run("early media rejection cancels unread body without a timer", async () => {
+    const clock = new FakeClock();
+    let cancellations = 0;
+    const stream = new ReadableStream<Uint8Array>({ cancel() { cancellations++; } });
+    const incoming = new Request(base, { method: "POST", headers: { "content-type": "text/plain" },
+      body: stream, duplex: "half" } as RequestInit);
+    const response = await handleProxy(incoming, provider, clock);
+    return response.status === 415 && cancellations === 1 && clock.tasks.size === 0;
+  });
+
+  await run("pre-read timeout and abort cancel unread bodies without provider work", async () => {
+    for (const mode of ["timeout", "abort"] as const) {
+      const caller = new AbortController();
+      let cancellations = 0;
+      let timersCleared = 0;
+      let calls = 0;
+      const stream = new ReadableStream<Uint8Array>({ cancel() { cancellations++; } });
+      const incoming = new Request(base, { method: "POST", headers: { "content-type": "application/json" },
+        body: stream, signal: caller.signal, duplex: "half" } as RequestInit);
+      const clock: ProxyClock = {
+        schedule: (callback) => {
+          if (mode === "timeout") callback(); else caller.abort();
+          return 1 as unknown as ReturnType<typeof setTimeout>;
+        },
+        cancel: () => { timersCleared++; },
+      };
+      const response = await handleProxy(incoming, async () => {
+        calls++;
+        return reply('{"suggestions":[]}');
+      }, clock);
+      if (response.status !== (mode === "timeout" ? 408 : 499) ||
+        cancellations !== 1 || timersCleared !== 1 || calls !== 0) return false;
+    }
+    return true;
+  });
+
   await run("actual request body accepts 16384 bytes and rejects one extra byte", async () => {
     const entries = Array.from({ length: 40 }, (_, i) => ({ id: `f${i}`, label: "অ".repeat(120) }));
     const needed = 16384 - utf8ByteLength(wire(entries, "bn"));
@@ -236,6 +310,73 @@ async function main(): Promise<void> {
     caller.abort();
     const response = await pending;
     return response.status === 499 && cancelled;
+  });
+
+  await run("stalled body times out before provider work and cleans up", async () => {
+    const clock = new FakeClock();
+    let calls = 0;
+    let cancellations = 0;
+    const stream = new ReadableStream<Uint8Array>({ cancel() { cancellations++; } });
+    const incoming = new Request(base, { method: "POST", headers: { "content-type": "application/json" },
+      body: stream, duplex: "half" } as RequestInit);
+    const pending = handleProxy(incoming, async () => { calls++; return reply('{"suggestions":[]}'); }, clock);
+    for (let i = 0; i < 20 && !stream.locked; i++) await Promise.resolve();
+    if (!stream.locked || clock.tasks.size !== 1) return false;
+    const duration = [...clock.tasks.values()][0].ms;
+    clock.fire();
+    const result = await content(await pending);
+    await Promise.resolve();
+    return duration === BODY_READ_TIMEOUT_MS && result.status === 408 &&
+      result.body.error === "request_timeout" && calls === 0 && cancellations === 1 &&
+      Array.from(clock.tasks).length === 0 && clock.cancelled === 1;
+  });
+
+  await run("abort and timeout races retain the first body outcome", async () => {
+    for (const first of ["abort", "timeout"] as const) {
+      const clock = new FakeClock();
+      const caller = new AbortController();
+      let calls = 0;
+      let cancellations = 0;
+      const stream = new ReadableStream<Uint8Array>({ cancel() { cancellations++; } });
+      const incoming = new Request(base, { method: "POST", headers: { "content-type": "application/json" },
+        body: stream, signal: caller.signal, duplex: "half" } as RequestInit);
+      const pending = handleProxy(incoming, async () => { calls++; return reply('{"suggestions":[]}'); }, clock);
+      for (let i = 0; i < 20 && !stream.locked; i++) await Promise.resolve();
+      if (!stream.locked) return false;
+      const fire = [...clock.tasks.values()][0].callback;
+      if (first === "abort") { caller.abort(); fire(); }
+      else { fire(); caller.abort(); }
+      const result = await content(await pending);
+      if (result.status !== (first === "abort" ? 499 : 408) || calls !== 0 ||
+        cancellations !== 1 || clock.tasks.size !== 0 || clock.cancelled !== 1) return false;
+    }
+    return true;
+  });
+
+  await run("completed body cancels its timer and invokes provider once", async () => {
+    const clock = new FakeClock();
+    const caller = new AbortController();
+    let controller!: ReadableStreamDefaultController<Uint8Array>;
+    let calls = 0;
+    let removed = 0;
+    const stream = new ReadableStream<Uint8Array>({ start(value) { controller = value; } });
+    const incoming = new Request(base, { method: "POST", headers: { "content-type": "application/json" },
+      body: stream, signal: caller.signal, duplex: "half" } as RequestInit);
+    const remove = incoming.signal.removeEventListener.bind(incoming.signal);
+    incoming.signal.removeEventListener = ((...args: Parameters<AbortSignal["removeEventListener"]>) => {
+      removed++;
+      return remove(...args);
+    }) as AbortSignal["removeEventListener"];
+    const pending = handleProxy(incoming, async () => { calls++; return reply('{"suggestions":[]}'); }, clock);
+    for (let i = 0; i < 20 && !stream.locked; i++) await Promise.resolve();
+    if (!stream.locked || clock.tasks.size !== 1) return false;
+    const staleDeadline = [...clock.tasks.values()][0].callback;
+    controller.enqueue(new TextEncoder().encode(wire()));
+    controller.close();
+    const result = await content(await pending);
+    staleDeadline();
+    return result.status === 200 && calls === 1 && Array.from(clock.tasks).length === 0 &&
+      clock.cancelled === 2 && removed === 2;
   });
 
   await run("provider HTTP, media type, malformed JSON, and body-read failures fail closed", async () => {
@@ -305,7 +446,7 @@ async function main(): Promise<void> {
     clock.fire();
     const response = await pending;
     return response.status === 504 && duration === PROVIDER_TIMEOUT_MS && signal.aborted &&
-      clock.tasks.size === 0 && clock.cancelled === 1;
+      clock.tasks.size === 0 && clock.cancelled === 2;
   });
 
   await run("request cancellation during provider work ignores late result", async () => {
@@ -323,7 +464,7 @@ async function main(): Promise<void> {
     const response = await pending;
     late.resolve(reply(JSON.stringify({ suggestions: [map()] })));
     await Promise.resolve();
-    return response.status === 499 && signal.aborted && clock.tasks.size === 0 && clock.cancelled === 1;
+    return response.status === 499 && signal.aborted && clock.tasks.size === 0 && clock.cancelled === 2;
   });
 
   await run("late provider response after timeout is discarded", async () => {

@@ -11,6 +11,15 @@ export function declaredLength(headers: Headers, limit: number): void {
   if (Number(value) > limit) throw new BodyReadError("too_large");
 }
 
+export function cancelUnreadBody(body: ReadableStream<Uint8Array> | null): void {
+  if (!body || body.locked) return;
+  try {
+    void body.cancel().catch(() => undefined);
+  } catch {
+    return;
+  }
+}
+
 export async function readBoundedText(
   body: ReadableStream<Uint8Array> | null, limit: number, signal: AbortSignal,
 ): Promise<string> {
@@ -25,9 +34,8 @@ export async function readBoundedText(
   const cancelReader = () => {
     if (cancelling) return;
     cancelling = true;
-    void reader.cancel().catch(() => undefined).finally(() => {
-      try { reader.releaseLock(); } catch { return; }
-    });
+    try { void reader.cancel().catch(() => undefined); } catch { /* Already closed. */ }
+    try { reader.releaseLock(); } catch { /* A pending read still owns the lock. */ }
   };
   const onAbort = () => {
     rejectAbort(new BodyReadError("aborted"));
