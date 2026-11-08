@@ -43,7 +43,7 @@ async function runtime(entry: string): Promise<Miniflare> {
     target: "es2022", write: false, logLevel: "silent",
   });
   assert.equal(result.outputFiles.length, 1);
-  return new Miniflare({ modules: true, script: result.outputFiles[0].text,
+  return new Miniflare({ modules: true, script: result.outputFiles[0].text, cf: false,
     compatibilityDate: date, compatibilityFlags });
 }
 
